@@ -43,7 +43,7 @@ export default async function TransactionsPage() {
             <p className="text-muted-foreground mb-4">
               Транзакций пока нет
             </p>
-            <Link href="/categories/new" className="text-primary hover:underline">
+            <Link href="/dashboard/categories/new" className="text-primary hover:underline">
               Создайте направление для начала работы
             </Link>
           </CardContent>

@@ -18,7 +18,10 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(git remote:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(openssl rand:*)",
+      "Bash(vercel env pull:*)",
+      "Bash(DATABASE_URL=\"postgres://5645eb177e0703abf3885e1fe1082eef07fc9b91c2b195cb6592237a8fefce03:sk_ZhrkYy86VQRfW_Jq5rSxj@db.prisma.io:5432/postgres?sslmode=require\" npx prisma db push:*)"
     ]
   }
 }

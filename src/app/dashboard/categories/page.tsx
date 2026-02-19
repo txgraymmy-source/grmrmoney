@@ -45,7 +45,7 @@ export default async function CategoriesPage() {
             <p className="text-muted-foreground mb-4">
               У вас пока нет направлений
             </p>
-            <Link href="/categories/new">
+            <Link href="/dashboard/categories/new">
               <Button>Создать первое направление</Button>
             </Link>
           </CardContent>

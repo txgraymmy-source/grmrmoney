@@ -28,7 +28,7 @@ export default function CategoriesHeader({ userId }: CategoriesHeaderProps) {
           >
             Импортировать кошелек
           </Button>
-          <Link href="/categories/new">
+          <Link href="/dashboard/categories/new">
             <Button>Создать направление</Button>
           </Link>
         </div>
