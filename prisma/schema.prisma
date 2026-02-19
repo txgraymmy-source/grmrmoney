@@ -1,0 +1,94 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// User - пользователи системы
+model User {
+  id                     String                @id @default(cuid())
+  email                  String                @unique
+  passwordHash           String
+  name                   String?
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
+  categories             Category[]
+  transactions           Transaction[]
+  transactionCategories  TransactionCategory[]
+}
+
+// Category - направления/проекты (модели)
+model Category {
+  id              String           @id @default(cuid())
+  name            String
+  description     String?
+  walletAddress   String           @unique  // TRON адрес
+  archived        Boolean          @default(false)  // Архивирован ли проект
+  userId          String
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  transactions    Transaction[]
+  encryptedWallet EncryptedWallet?
+
+  @@index([userId])
+}
+
+// TransactionCategory - категории транзакций (Зарплата, Покупки, и т.д.)
+model TransactionCategory {
+  id           String        @id @default(cuid())
+  name         String
+  icon         String        // Эмодзи иконка
+  color        String        // Цвет категории
+  type         String        // "income" | "expense"
+  userId       String
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([userId])
+}
+
+// Transaction - все транзакции
+model Transaction {
+  id                     String                @id @default(cuid())
+  txHash                 String                @unique
+  fromAddress            String
+  toAddress              String
+  amount                 String                // Храним как строку для точности
+  type                   String                // "incoming" | "outgoing"
+  status                 String                // "pending" | "confirmed" | "failed"
+  description            String?               // Описание/категоризация от пользователя
+  blockNumber            Int?
+  timestamp              DateTime
+  categoryId             String?
+  category               Category?             @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  transactionCategoryId  String?
+  transactionCategory    TransactionCategory?  @relation(fields: [transactionCategoryId], references: [id], onDelete: SetNull)
+  userId                 String
+  user                   User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
+
+  @@index([userId])
+  @@index([categoryId])
+  @@index([transactionCategoryId])
+  @@index([timestamp])
+}
+
+// EncryptedWallet - зашифрованные ключи
+model EncryptedWallet {
+  id              String      @id @default(cuid())
+  categoryId      String      @unique
+  category        Category    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  encryptedData   String      // Зашифрованный seed phrase
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
