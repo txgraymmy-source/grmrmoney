@@ -34,15 +34,17 @@ async function getDashboardStats(userId: string) {
     .reduce((sum, tx) => sum + parseFloat(tx.amount), 0)
   const realBalance = blockchainIncoming - blockchainOutgoing
 
-  // OnlyFans доходы/расходы (виртуальный учет)
+  // OnlyFans доходы/расходы (виртуальный учет с 20% вычетом)
   const onlyfansTxs = transactions.filter(tx => tx.source === 'onlyfans')
-  const onlyfansIncoming = onlyfansTxs
+  const onlyfansGross = onlyfansTxs
     .filter(tx => tx.type === 'incoming')
     .reduce((sum, tx) => sum + parseFloat(tx.amount), 0)
   const onlyfansOutgoing = onlyfansTxs
     .filter(tx => tx.type === 'outgoing')
     .reduce((sum, tx) => sum + parseFloat(tx.amount), 0)
-  const onlyfansBalance = onlyfansIncoming - onlyfansOutgoing
+  const onlyfansNet = onlyfansGross * 0.8  // Вычитаем 20% комиссию
+  const onlyfansCommission = onlyfansGross * 0.2
+  const onlyfansBalance = onlyfansNet - onlyfansOutgoing
 
   // Общая статистика для графиков
   const totalIncoming = transactions
@@ -69,14 +71,15 @@ async function getDashboardStats(userId: string) {
     .filter(tx => tx.type === 'outgoing')
     .reduce((sum, tx) => sum + parseFloat(tx.amount), 0)
 
-  // OnlyFans за последние 30 дней
+  // OnlyFans за последние 30 дней (с 20% вычетом)
   const recentOnlyfansTxs = onlyfansTxs.filter(
     tx => new Date(tx.timestamp) >= thirtyDaysAgo
   )
 
-  const recentOnlyfansIncoming = recentOnlyfansTxs
+  const recentOnlyfansGross = recentOnlyfansTxs
     .filter(tx => tx.type === 'incoming')
     .reduce((sum, tx) => sum + parseFloat(tx.amount), 0)
+  const recentOnlyfansNet = recentOnlyfansGross * 0.8  // Вычитаем 20%
 
   const recentOnlyfansOutgoing = recentOnlyfansTxs
     .filter(tx => tx.type === 'outgoing')
@@ -115,11 +118,14 @@ async function getDashboardStats(userId: string) {
       blockchainOutgoing,
       recentBlockchainIncoming,
       recentBlockchainOutgoing,
-      // OnlyFans баланс
+      // OnlyFans баланс (с 20% вычетом)
       onlyfansBalance,
-      onlyfansIncoming,
+      onlyfansGross,
+      onlyfansNet,
+      onlyfansCommission,
       onlyfansOutgoing,
-      recentOnlyfansIncoming,
+      recentOnlyfansGross,
+      recentOnlyfansNet,
       recentOnlyfansOutgoing,
       // Общая статистика
       totalIncoming,
@@ -180,13 +186,13 @@ export default async function DashboardPage() {
         <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/20 card-rounded overflow-hidden">
           <div className="h-1 bg-gradient-to-r from-purple-500 to-purple-600"></div>
           <CardHeader className="pb-3">
-            <CardDescription className="text-purple-400/80">💎 OnlyFans доходы</CardDescription>
-            <CardTitle className="text-3xl text-white">{formatUSDT(stats.onlyfansBalance)} USD</CardTitle>
+            <CardDescription className="text-purple-400/80">💎 OnlyFans (чистый)</CardDescription>
+            <CardTitle className="text-3xl text-white">{formatUSDT(stats.onlyfansNet)} USD</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between text-xs">
-              <span className="text-green-400">Дебет: {formatUSDT(stats.onlyfansIncoming)}</span>
-              <span className="text-red-400">Кредит: {formatUSDT(stats.onlyfansOutgoing)}</span>
+              <span className="text-gray-400">Брутто: {formatUSDT(stats.onlyfansGross)}</span>
+              <span className="text-red-400">-20%: {formatUSDT(stats.onlyfansCommission)}</span>
             </div>
           </CardContent>
         </Card>
@@ -262,11 +268,12 @@ export default async function DashboardPage() {
                     .reduce((sum, tx) => sum + parseFloat(tx.amount), 0)
                   const catRealBalance = catBlockchainIncoming - catBlockchainOutgoing
 
-                  // OnlyFans баланс
+                  // OnlyFans баланс (с 20% вычетом)
                   const onlyfansTxs = category.transactions.filter(tx => tx.source === 'onlyfans')
-                  const catOnlyfansIncoming = onlyfansTxs
+                  const catOnlyfansGross = onlyfansTxs
                     .filter(tx => tx.type === 'incoming')
                     .reduce((sum, tx) => sum + parseFloat(tx.amount), 0)
+                  const catOnlyfansNet = catOnlyfansGross * 0.8  // Вычитаем 20%
 
                   return (
                     <Link key={category.id} href={`/dashboard/categories/${category.id}`}>
@@ -280,7 +287,7 @@ export default async function DashboardPage() {
                               </p>
                               {onlyfansTxs.length > 0 && (
                                 <p className="text-xs text-purple-400">
-                                  💎 {onlyfansTxs.length} OF ({formatUSDT(catOnlyfansIncoming)})
+                                  💎 {onlyfansTxs.length} OF ({formatUSDT(catOnlyfansNet)})
                                 </p>
                               )}
                             </div>
