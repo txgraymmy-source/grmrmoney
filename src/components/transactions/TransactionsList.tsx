@@ -39,6 +39,33 @@ export default function TransactionsList({ categoryId, initialTransactions }: Tr
   const [categories, setCategories] = useState<TransactionCategory[]>([])
   const [selectedTx, setSelectedTx] = useState<string | null>(null)
 
+  // Filters (default: hide OnlyFans noise)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [sourceFilter, setSourceFilter] = useState<string>('blockchain') // all, blockchain, onlyfans, manual
+  const [typeFilter, setTypeFilter] = useState<string>('all') // all, incoming, outgoing
+
+  // Filtered transactions
+  const filteredTransactions = transactions.filter(tx => {
+    // Source filter
+    if (sourceFilter !== 'all' && tx.source !== sourceFilter) return false
+
+    // Type filter
+    if (typeFilter !== 'all' && tx.type !== typeFilter) return false
+
+    // Search query
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase()
+      return (
+        tx.amount.includes(query) ||
+        tx.description?.toLowerCase().includes(query) ||
+        tx.fromAddress?.toLowerCase().includes(query) ||
+        tx.toAddress?.toLowerCase().includes(query)
+      )
+    }
+
+    return true
+  })
+
   // Загрузка категорий
   useEffect(() => {
     loadCategories()
@@ -155,15 +182,119 @@ export default function TransactionsList({ categoryId, initialTransactions }: Tr
         </button>
       </div>
 
-      {transactions.length === 0 ? (
+      {/* Filters */}
+      <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4 mb-4 space-y-4">
+        {/* Search */}
+        <div>
+          <input
+            type="text"
+            placeholder="🔍 Поиск по сумме, описанию, адресу..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
+          />
+        </div>
+
+        {/* Filter Buttons */}
+        <div className="flex flex-wrap gap-2">
+          {/* Source Filter */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => setSourceFilter('all')}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                sourceFilter === 'all'
+                  ? 'bg-purple-600 text-white'
+                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+              }`}
+            >
+              Все источники
+            </button>
+            <button
+              onClick={() => setSourceFilter('blockchain')}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                sourceFilter === 'blockchain'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+              }`}
+            >
+              ⛓️ Крипто
+            </button>
+            <button
+              onClick={() => setSourceFilter('onlyfans')}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                sourceFilter === 'onlyfans'
+                  ? 'bg-purple-600 text-white'
+                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+              }`}
+            >
+              💎 OnlyFans
+            </button>
+            <button
+              onClick={() => setSourceFilter('manual')}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                sourceFilter === 'manual'
+                  ? 'bg-yellow-600 text-white'
+                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+              }`}
+            >
+              ✏️ Ручные
+            </button>
+          </div>
+
+          {/* Type Filter */}
+          <div className="flex gap-2 ml-auto">
+            <button
+              onClick={() => setTypeFilter('all')}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                typeFilter === 'all'
+                  ? 'bg-gray-600 text-white'
+                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+              }`}
+            >
+              Все
+            </button>
+            <button
+              onClick={() => setTypeFilter('incoming')}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                typeFilter === 'incoming'
+                  ? 'bg-green-600 text-white'
+                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+              }`}
+            >
+              ↓ Входящие
+            </button>
+            <button
+              onClick={() => setTypeFilter('outgoing')}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                typeFilter === 'outgoing'
+                  ? 'bg-red-600 text-white'
+                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+              }`}
+            >
+              ↑ Исходящие
+            </button>
+          </div>
+        </div>
+
+        {/* Results count */}
+        <div className="text-sm text-gray-400">
+          Показано: {filteredTransactions.length} из {transactions.length} транзакций
+        </div>
+      </div>
+
+      {filteredTransactions.length === 0 ? (
         <div className="bg-gray-900 border border-gray-800 rounded-2xl p-12 text-center">
-          <p className="text-gray-400 mb-3">Транзакций пока нет</p>
-          <p className="text-sm text-gray-500">Нажмите "Синхронизировать" чтобы загрузить транзакции из блокчейна</p>
+          <p className="text-gray-400 mb-3">
+            {transactions.length === 0 ? 'Транзакций пока нет' : 'Нет транзакций по выбранным фильтрам'}
+          </p>
+          {transactions.length === 0 && (
+            <p className="text-sm text-gray-500">Нажмите "Синхронизировать" чтобы загрузить транзакции из блокчейна</p>
+          )}
         </div>
       ) : (
         <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
           <div className="divide-y divide-gray-800">
-            {transactions.map((tx) => (
+            {filteredTransactions.map((tx) => (
               <div key={tx.id} className="p-4 hover:bg-gray-800/50 transition-colors">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">

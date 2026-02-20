@@ -123,14 +123,14 @@ export default async function CategoryPage({ params }: { params: Promise<{ id: s
           </CardContent>
         </Card>
 
-        {/* Total Withdrawn */}
+        {/* Total Expenses */}
         <Card className="bg-gradient-to-br from-red-500/10 to-red-600/5 border-red-500/20">
           <CardHeader className="pb-3">
-            <CardDescription className="text-red-400/80">📤 Выведено</CardDescription>
-            <CardTitle className="text-2xl text-white">{formatUSDT(category.stats.totalWithdrawn)} USDT</CardTitle>
+            <CardDescription className="text-red-400/80">📤 Расходы (крипто)</CardDescription>
+            <CardTitle className="text-2xl text-white">{formatUSDT(category.stats.blockchainOutgoing)} USDT</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-xs text-gray-500">Всего исходящих</p>
+            <p className="text-xs text-gray-500">Исходящие транзакции</p>
           </CardContent>
         </Card>
 
