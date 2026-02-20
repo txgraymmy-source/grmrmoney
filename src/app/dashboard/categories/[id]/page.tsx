@@ -6,7 +6,6 @@ import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import WalletBalance from '@/components/wallet/WalletBalance'
 import TransactionsList from '@/components/transactions/TransactionsList'
-import ManualTransactionForm from '@/components/transactions/ManualTransactionForm'
 import CategoryActions from '@/components/categories/CategoryActions'
 import ProjectCharts from '@/components/dashboard/ProjectCharts'
 import OnlyFansAccountManager from '@/components/category/OnlyFansAccountManager'
@@ -201,9 +200,6 @@ export default async function CategoryPage({ params }: { params: Promise<{ id: s
 
           {/* OnlyFans Transaction Sync */}
           <OnlyFansTransactionSync categoryId={category.id} />
-
-          {/* Manual Transaction Form */}
-          <ManualTransactionForm categoryId={category.id} />
         </div>
 
         {/* Right Column - 1/3 */}
