@@ -13,14 +13,18 @@ interface TransactionCategory {
 
 interface Transaction {
   id: string
-  txHash: string
-  fromAddress: string
-  toAddress: string
+  txHash: string | null
+  fromAddress: string | null
+  toAddress: string | null
   amount: string
   type: string
+  source: string
   status: string
   description: string | null
   timestamp: Date
+  onlyFansTransactionId?: string | null
+  onlyFansFanId?: string | null
+  onlyFansType?: string | null
   transactionCategory?: TransactionCategory | null
 }
 
@@ -175,6 +179,19 @@ export default function TransactionsList({ categoryId, initialTransactions }: Tr
                         {tx.type === 'incoming' ? '↓ Входящая' : '↑ Исходящая'}
                       </span>
 
+                      {/* Source Badge */}
+                      <span className={`
+                        px-3 py-1 rounded-lg text-xs font-medium border
+                        ${tx.source === 'blockchain'
+                          ? 'bg-blue-500/10 text-blue-400 border-blue-500/30'
+                          : tx.source === 'onlyfans'
+                          ? 'bg-purple-500/10 text-purple-400 border-purple-500/30'
+                          : 'bg-yellow-500/10 text-yellow-400 border-yellow-500/30'
+                        }
+                      `}>
+                        {tx.source === 'blockchain' ? '⛓️ Blockchain' : tx.source === 'onlyfans' ? '💎 OnlyFans' : '✏️ Ручная'}
+                      </span>
+
                       {tx.transactionCategory ? (
                         <span
                           className="px-3 py-1 rounded-lg text-xs font-medium border cursor-pointer hover:opacity-80 transition-opacity"
@@ -221,12 +238,22 @@ export default function TransactionsList({ categoryId, initialTransactions }: Tr
                     )}
 
                     {/* Address */}
-                    <div className="text-sm text-gray-400 mb-1">
-                      {tx.type === 'incoming' ? 'От: ' : 'Кому: '}
-                      <code className="text-purple-400">
-                        {truncateAddress(tx.type === 'incoming' ? tx.fromAddress : tx.toAddress)}
-                      </code>
-                    </div>
+                    {tx.source === 'blockchain' && tx.fromAddress && tx.toAddress && (
+                      <div className="text-sm text-gray-400 mb-1">
+                        {tx.type === 'incoming' ? 'От: ' : 'Кому: '}
+                        <code className="text-purple-400">
+                          {truncateAddress(tx.type === 'incoming' ? tx.fromAddress : tx.toAddress)}
+                        </code>
+                      </div>
+                    )}
+
+                    {/* OnlyFans info */}
+                    {tx.source === 'onlyfans' && tx.onlyFansType && (
+                      <div className="text-sm text-gray-400 mb-1">
+                        {tx.onlyFansType}
+                        {tx.onlyFansFanId && <span className="text-purple-400"> • Fan #{tx.onlyFansFanId.slice(-6)}</span>}
+                      </div>
+                    )}
 
                     {/* Description */}
                     {tx.description && (
