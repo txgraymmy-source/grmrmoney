@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Loader2, Plus, Trash2, ExternalLink } from 'lucide-react'
+import { OnlyMonsterAccount } from '@/lib/onlymonster/client'
 
 interface OnlyFansAccount {
   id: string
@@ -13,15 +14,6 @@ interface OnlyFansAccount {
   avatar: string | null
   subscribePrice: number | null
   lastSyncAt: string | null
-}
-
-interface OnlyMonsterAccount {
-  id: number
-  platform_account_id: string
-  username: string
-  name: string
-  avatar: string
-  subscribe_price: number
 }
 
 interface Props {
