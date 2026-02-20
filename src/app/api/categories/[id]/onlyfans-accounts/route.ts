@@ -7,6 +7,13 @@ import { getOnlyMonsterAccount } from '@/lib/onlymonster/client'
 
 const addAccountSchema = z.object({
   platformAccountId: z.string(),
+  platform: z.string(),
+  username: z.string(),
+  name: z.string().optional(),
+  avatar: z.string().optional(),
+  email: z.string().optional(),
+  subscribePrice: z.number().optional(),
+  organisationId: z.string().optional(),
 })
 
 // GET - получить OnlyFans аккаунты направления
@@ -60,11 +67,12 @@ export async function POST(
 
     const { id: categoryId } = await params
     const body = await request.json()
-    const { platformAccountId } = addAccountSchema.parse(body)
+    const accountData = addAccountSchema.parse(body)
 
     console.log('[API] Adding OnlyFans account:', {
       categoryId,
-      platformAccountId,
+      platformAccountId: accountData.platformAccountId,
+      username: accountData.username,
       userId: session.user.id,
     })
 
@@ -88,7 +96,7 @@ export async function POST(
 
     // Проверяем, не добавлен ли уже этот аккаунт
     const exists = category.onlyFansAccounts.some(
-      (acc) => acc.platformAccountId === platformAccountId
+      (acc) => acc.platformAccountId === accountData.platformAccountId
     )
 
     if (exists) {
@@ -98,62 +106,19 @@ export async function POST(
       )
     }
 
-    // Получаем API ключ пользователя
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { onlyMonsterApiKey: true },
-    })
-
-    if (!user?.onlyMonsterApiKey) {
-      return NextResponse.json(
-        { error: 'OnlyMonster API ключ не настроен' },
-        { status: 400 }
-      )
-    }
-
-    // Получаем данные аккаунта из OnlyMonster API
-    let accountData
-    try {
-      console.log('[API] Fetching account from OnlyMonster...', platformAccountId)
-      accountData = await getOnlyMonsterAccount(
-        user.onlyMonsterApiKey,
-        platformAccountId
-      )
-      console.log('[API] Account data received:', {
-        platform_account_id: accountData.platform_account_id,
-        username: accountData.username,
-      })
-    } catch (error: any) {
-      console.error('[API] Error fetching account from OnlyMonster:', error.message)
-      // Если нет доступа к аккаунту, возвращаем понятную ошибку
-      if (error.message.includes('403')) {
-        return NextResponse.json(
-          {
-            error: `Ошибка доступа к аккаунту: ${error.message}`,
-            details: 'Проверьте права организации в OnlyMonster'
-          },
-          { status: 403 }
-        )
-      }
-      // Возвращаем полную ошибку для других случаев
-      return NextResponse.json(
-        { error: error.message || 'Ошибка при получении данных аккаунта' },
-        { status: 500 }
-      )
-    }
-
-    // Создаем запись в БД
+    // Создаем запись в БД используя данные из запроса
+    // (они уже получены из списка аккаунтов на клиенте)
     const onlyFansAccount = await prisma.onlyFansAccount.create({
       data: {
         categoryId,
-        platformAccountId: accountData.platform_account_id,
+        platformAccountId: accountData.platformAccountId,
         platform: accountData.platform,
         username: accountData.username,
-        name: accountData.name,
-        avatar: accountData.avatar,
-        email: accountData.email,
-        subscribePrice: accountData.subscribe_price,
-        organisationId: accountData.organisation_id,
+        name: accountData.name || null,
+        avatar: accountData.avatar || null,
+        email: accountData.email || null,
+        subscribePrice: accountData.subscribePrice || null,
+        organisationId: accountData.organisationId || null,
       },
     })
 

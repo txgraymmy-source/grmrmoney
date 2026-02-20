@@ -82,7 +82,7 @@ export default function OnlyFansAccountManager({ categoryId }: Props) {
     }
   }
 
-  const handleAddAccount = async (platformAccountId: string) => {
+  const handleAddAccount = async (account: OnlyMonsterAccount) => {
     try {
       setAdding(true)
       setError('')
@@ -90,7 +90,16 @@ export default function OnlyFansAccountManager({ categoryId }: Props) {
       const response = await fetch(`/api/categories/${categoryId}/onlyfans-accounts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ platformAccountId }),
+        body: JSON.stringify({
+          platformAccountId: account.platform_account_id,
+          platform: account.platform,
+          username: account.username,
+          name: account.name,
+          avatar: account.avatar,
+          email: account.email,
+          subscribePrice: account.subscribe_price,
+          organisationId: account.organisation_id,
+        }),
       })
 
       const data = await response.json()
@@ -247,7 +256,7 @@ export default function OnlyFansAccountManager({ categoryId }: Props) {
                 {availableAccounts.map((account) => (
                   <button
                     key={account.id}
-                    onClick={() => handleAddAccount(account.platform_account_id)}
+                    onClick={() => handleAddAccount(account)}
                     disabled={adding}
                     className="w-full flex items-center space-x-3 p-3 bg-gray-800/50 rounded-lg border border-gray-700 hover:border-blue-500 hover:bg-gray-800 transition-colors text-left disabled:opacity-50"
                   >
