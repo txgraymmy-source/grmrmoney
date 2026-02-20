@@ -84,24 +84,44 @@ export async function getOnlyMonsterAccount(
   apiKey: string,
   accountId: string
 ): Promise<OnlyMonsterAccount> {
-  const response = await fetch(
-    `${ONLYMONSTER_API_BASE}/api/v0/accounts/${accountId}`,
-    {
-      headers: {
-        'x-om-auth-token': apiKey,
-      },
-    }
-  )
+  const url = `${ONLYMONSTER_API_BASE}/api/v0/accounts/${accountId}`
+
+  console.log('[OnlyMonster] Fetching account:', {
+    url,
+    accountId,
+    hasApiKey: !!apiKey,
+  })
+
+  const response = await fetch(url, {
+    headers: {
+      'x-om-auth-token': apiKey,
+    },
+  })
 
   if (!response.ok) {
-    const error = await response.text()
-    if (response.status === 403) {
-      throw new Error('Нет доступа к этому аккаунту. Проверьте права организации.')
+    const errorText = await response.text()
+    console.error('[OnlyMonster] API Error:', {
+      status: response.status,
+      statusText: response.statusText,
+      accountId,
+      error: errorText,
+    })
+
+    let errorData
+    try {
+      errorData = JSON.parse(errorText)
+    } catch {
+      errorData = { message: errorText }
     }
-    throw new Error(`OnlyMonster API error: ${response.status} ${error}`)
+
+    if (response.status === 403) {
+      throw new Error(`403: ${errorData.message || 'Нет доступа к аккаунту'}`)
+    }
+    throw new Error(`OnlyMonster API ${response.status}: ${errorData.message || errorText}`)
   }
 
   const data = await response.json()
+  console.log('[OnlyMonster] Account fetched successfully:', accountId)
   return data.account
 }
 

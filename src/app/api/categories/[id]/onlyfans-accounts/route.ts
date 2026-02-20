@@ -62,6 +62,12 @@ export async function POST(
     const body = await request.json()
     const { platformAccountId } = addAccountSchema.parse(body)
 
+    console.log('[API] Adding OnlyFans account:', {
+      categoryId,
+      platformAccountId,
+      userId: session.user.id,
+    })
+
     // Проверяем права доступа
     const category = await prisma.category.findUnique({
       where: { id: categoryId },
@@ -108,19 +114,32 @@ export async function POST(
     // Получаем данные аккаунта из OnlyMonster API
     let accountData
     try {
+      console.log('[API] Fetching account from OnlyMonster...', platformAccountId)
       accountData = await getOnlyMonsterAccount(
         user.onlyMonsterApiKey,
         platformAccountId
       )
+      console.log('[API] Account data received:', {
+        platform_account_id: accountData.platform_account_id,
+        username: accountData.username,
+      })
     } catch (error: any) {
+      console.error('[API] Error fetching account from OnlyMonster:', error.message)
       // Если нет доступа к аккаунту, возвращаем понятную ошибку
-      if (error.message.includes('403') || error.message.includes('Нет доступа')) {
+      if (error.message.includes('403')) {
         return NextResponse.json(
-          { error: 'Нет доступа к этому аккаунту. Возможно, он принадлежит другой организации в OnlyMonster.' },
+          {
+            error: `Ошибка доступа к аккаунту: ${error.message}`,
+            details: 'Проверьте права организации в OnlyMonster'
+          },
           { status: 403 }
         )
       }
-      throw error
+      // Возвращаем полную ошибку для других случаев
+      return NextResponse.json(
+        { error: error.message || 'Ошибка при получении данных аккаунта' },
+        { status: 500 }
+      )
     }
 
     // Создаем запись в БД
