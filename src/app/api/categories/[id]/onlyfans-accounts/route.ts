@@ -12,7 +12,7 @@ const addAccountSchema = z.object({
 // GET - получить OnlyFans аккаунты направления
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -21,7 +21,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const categoryId = params.id
+    const { id: categoryId } = await params
 
     // Проверяем права доступа
     const category = await prisma.category.findUnique({
@@ -49,7 +49,7 @@ export async function GET(
 // POST - добавить OnlyFans аккаунт к направлению
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -58,7 +58,7 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const categoryId = params.id
+    const { id: categoryId } = await params
     const body = await request.json()
     const { platformAccountId } = addAccountSchema.parse(body)
 
@@ -149,7 +149,7 @@ export async function POST(
 // DELETE - удалить OnlyFans аккаунт из направления
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -158,7 +158,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const categoryId = params.id
+    const { id: categoryId } = await params
     const { searchParams } = new URL(request.url)
     const accountId = searchParams.get('accountId')
 
