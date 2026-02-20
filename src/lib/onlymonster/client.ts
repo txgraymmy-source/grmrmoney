@@ -64,6 +64,9 @@ export async function getOnlyMonsterAccounts(
 
   if (!response.ok) {
     const error = await response.text()
+    if (response.status === 403) {
+      throw new Error('Нет доступа к аккаунтам. Проверьте права организации в OnlyMonster.')
+    }
     throw new Error(`OnlyMonster API error: ${response.status} ${error}`)
   }
 
@@ -92,6 +95,9 @@ export async function getOnlyMonsterAccount(
 
   if (!response.ok) {
     const error = await response.text()
+    if (response.status === 403) {
+      throw new Error('Нет доступа к этому аккаунту. Проверьте права организации.')
+    }
     throw new Error(`OnlyMonster API error: ${response.status} ${error}`)
   }
 

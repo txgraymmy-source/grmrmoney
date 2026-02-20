@@ -58,21 +58,25 @@ export default function OnlyFansAccountManager({ categoryId }: Props) {
   const fetchAvailableAccounts = async () => {
     try {
       setLoading(true)
+      setError('')
       const response = await fetch('/api/onlymonster/accounts')
-      if (response.ok) {
-        const { data } = await response.json()
-        // Фильтруем уже добавленные
-        const added = new Set(accounts.map((a) => a.platformAccountId))
-        setAvailableAccounts(
-          data.accounts.filter((a: OnlyMonsterAccount) => !added.has(a.platform_account_id))
-        )
-        setShowSelector(true)
-      } else {
+
+      if (!response.ok) {
         const { error: errorMsg } = await response.json()
-        setError(errorMsg || 'Не удалось загрузить аккаунты')
+        throw new Error(errorMsg || 'Не удалось загрузить аккаунты')
       }
-    } catch (error) {
-      setError('Ошибка при загрузке аккаунтов')
+
+      const { data } = await response.json()
+
+      // Фильтруем уже добавленные
+      const added = new Set(accounts.map((a) => a.platformAccountId))
+      setAvailableAccounts(
+        data.accounts.filter((a: OnlyMonsterAccount) => !added.has(a.platform_account_id))
+      )
+      setShowSelector(true)
+    } catch (error: any) {
+      console.error('Error fetching accounts:', error)
+      setError(error.message || 'Ошибка при загрузке аккаунтов')
     } finally {
       setLoading(false)
     }
@@ -160,8 +164,18 @@ export default function OnlyFansAccountManager({ categoryId }: Props) {
       </CardHeader>
       <CardContent className="space-y-4">
         {error && (
-          <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-md">
-            {error}
+          <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-md space-y-2">
+            <p className="font-semibold">{error}</p>
+            {error.includes('Нет доступа') && (
+              <div className="text-xs text-destructive/80 space-y-1">
+                <p>💡 Возможные решения:</p>
+                <ul className="list-disc list-inside ml-2">
+                  <li>Проверьте права организации в настройках OnlyMonster</li>
+                  <li>Убедитесь, что API ключ принадлежит правильной организации</li>
+                  <li>Свяжитесь с поддержкой OnlyMonster для предоставления доступа</li>
+                </ul>
+              </div>
+            )}
           </div>
         )}
 
