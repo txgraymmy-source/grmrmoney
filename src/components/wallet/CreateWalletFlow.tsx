@@ -17,7 +17,7 @@ interface CreateWalletFlowProps {
 
 export default function CreateWalletFlow({ categoryName, categoryDescription }: CreateWalletFlowProps) {
   const router = useRouter()
-  const { addWallet } = useWallet()
+  const { addWallet, isUnlocked, masterPassword: savedMasterPassword } = useWallet()
   const [step, setStep] = useState<'form' | 'generating' | 'seed-phrase' | 'password' | 'saving'>('form')
   const [walletData, setWalletData] = useState<{
     mnemonic: string
@@ -70,51 +70,20 @@ export default function CreateWalletFlow({ categoryName, categoryDescription }: 
       setError('Пожалуйста, подтвердите, что вы сохранили seed phrase')
       return
     }
-    setStep('password')
+
+    // Если кошельки разблокированы и есть сохраненный пароль - пропускаем шаг с паролем
+    if (isUnlocked && savedMasterPassword && hasExistingWallets) {
+      setMasterPassword(savedMasterPassword)
+      handleCreateCategoryWithPassword(savedMasterPassword)
+    } else {
+      setStep('password')
+    }
   }
 
-  const handleCreateCategory = async () => {
-    setError('')
-
-    // Проверяем минимальную длину пароля
-    if (masterPassword.length < 8) {
-      setError('Пароль должен содержать минимум 8 символов')
-      return
-    }
-
-    // Проверяем совпадение паролей только для первого кошелька
-    if (!hasExistingWallets && masterPassword !== confirmPassword) {
-      setError('Пароли не совпадают')
-      return
-    }
-
+  const handleCreateCategoryWithPassword = async (password: string) => {
     if (!walletData) {
       setError('Данные кошелька не найдены')
       return
-    }
-
-    // Если есть существующие кошельки - проверяем правильность пароля
-    if (hasExistingWallets) {
-      try {
-        const response = await fetch('/api/wallets/encrypted')
-        if (response.ok) {
-          const { data: encryptedWallets } = await response.json()
-
-          // Пытаемся расшифровать первый кошелек для проверки пароля
-          if (encryptedWallets && encryptedWallets.length > 0) {
-            try {
-              decryptData(encryptedWallets[0].encryptedData, masterPassword)
-            } catch (decryptError) {
-              setError('Неверный мастер-пароль. Введите пароль, который вы использовали для других кошельков.')
-              return
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error verifying password:', error)
-        setError('Ошибка при проверке пароля')
-        return
-      }
     }
 
     setStep('saving')
@@ -145,7 +114,7 @@ export default function CreateWalletFlow({ categoryName, categoryDescription }: 
         address: walletData.address,
       })
 
-      const encryptedData = encryptData(dataToEncrypt, masterPassword)
+      const encryptedData = encryptData(dataToEncrypt, password)
 
       // 3. Сохраняем зашифрованный кошелек
       const walletResponse = await fetch('/api/wallets/create', {
@@ -177,6 +146,24 @@ export default function CreateWalletFlow({ categoryName, categoryDescription }: 
       setError(error.message || 'Ошибка при создании направления')
       setStep('password')
     }
+  }
+
+  const handleCreateCategory = async () => {
+    setError('')
+
+    // Проверяем минимальную длину пароля
+    if (masterPassword.length < 8) {
+      setError('Пароль должен содержать минимум 8 символов')
+      return
+    }
+
+    // Проверяем совпадение паролей только для первого кошелька
+    if (!hasExistingWallets && masterPassword !== confirmPassword) {
+      setError('Пароли не совпадают')
+      return
+    }
+
+    await handleCreateCategoryWithPassword(masterPassword)
   }
 
   if (step === 'form') {

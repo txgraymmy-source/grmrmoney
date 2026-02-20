@@ -62,6 +62,7 @@ export interface UpdateTransactionInput {
 export interface WalletContextType {
   wallets: Map<string, DecryptedWallet>
   isUnlocked: boolean
+  masterPassword: string | null
   unlock: (password: string) => Promise<boolean>
   lock: () => void
   addWallet: (categoryId: string, wallet: DecryptedWallet) => void

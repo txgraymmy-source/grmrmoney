@@ -9,6 +9,7 @@ const WalletContext = createContext<WalletContextType | undefined>(undefined)
 export function WalletProvider({ children }: { children: React.ReactNode }) {
   const [wallets, setWallets] = useState<Map<string, DecryptedWallet>>(new Map())
   const [isUnlocked, setIsUnlocked] = useState(false)
+  const [masterPassword, setMasterPassword] = useState<string | null>(null)
 
   /**
    * Разблокирует все кошельки пользователя с мастер-паролем
@@ -65,6 +66,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
 
       setWallets(decryptedWallets)
       setIsUnlocked(true)
+      setMasterPassword(password) // Сохраняем пароль для создания новых кошельков
       return true
     } catch (error) {
       console.error('Error unlocking wallets:', error)
@@ -78,6 +80,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   const lock = useCallback(() => {
     setWallets(new Map())
     setIsUnlocked(false)
+    setMasterPassword(null) // Очищаем пароль при блокировке
   }, [])
 
   /**
@@ -103,6 +106,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       value={{
         wallets,
         isUnlocked,
+        masterPassword,
         unlock,
         lock,
         addWallet,
