@@ -16,6 +16,7 @@ model User {
   email                  String                @unique
   passwordHash           String
   name                   String?
+  onlyMonsterApiKey      String?               // API ключ для OnlyMonster
   createdAt              DateTime              @default(now())
   updatedAt              DateTime              @updatedAt
   categories             Category[]
@@ -25,17 +26,18 @@ model User {
 
 // Category - направления/проекты (модели)
 model Category {
-  id              String           @id @default(cuid())
-  name            String
-  description     String?
-  walletAddress   String           @unique  // TRON адрес
-  archived        Boolean          @default(false)  // Архивирован ли проект
-  userId          String
-  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  transactions    Transaction[]
-  encryptedWallet EncryptedWallet?
+  id               String             @id @default(cuid())
+  name             String
+  description      String?
+  walletAddress    String             @unique  // TRON адрес
+  archived         Boolean            @default(false)  // Архивирован ли проект
+  userId           String
+  user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  transactions     Transaction[]
+  encryptedWallet  EncryptedWallet?
+  onlyFansAccounts OnlyFansAccount[]  // До 3х OnlyFans аккаунтов
 
   @@index([userId])
 }
@@ -56,18 +58,24 @@ model TransactionCategory {
   @@index([userId])
 }
 
-// Transaction - все транзакции
+// Transaction - все транзакции (blockchain + OnlyFans + manual)
 model Transaction {
   id                     String                @id @default(cuid())
-  txHash                 String                @unique
-  fromAddress            String
-  toAddress              String
+  txHash                 String?               @unique  // Nullable для OF и manual транзакций
+  fromAddress            String?               // Nullable для OF транзакций
+  toAddress              String?               // Nullable для OF транзакций
   amount                 String                // Храним как строку для точности
   type                   String                // "incoming" | "outgoing"
+  source                 String                @default("blockchain")  // "blockchain" | "onlyfans" | "manual"
   status                 String                // "pending" | "confirmed" | "failed"
   description            String?               // Описание/категоризация от пользователя
   blockNumber            Int?
   timestamp              DateTime
+  // OnlyFans specific fields
+  onlyFansTransactionId  String?               @unique  // ID транзакции из OnlyMonster API
+  onlyFansFanId          String?               // ID фана из OnlyFans
+  onlyFansType           String?               // Тип из OF (Tip, Message payment и т.д.)
+  // Relations
   categoryId             String?
   category               Category?             @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   transactionCategoryId  String?
@@ -81,6 +89,7 @@ model Transaction {
   @@index([categoryId])
   @@index([transactionCategoryId])
   @@index([timestamp])
+  @@index([source])
 }
 
 // EncryptedWallet - зашифрованные ключи
@@ -91,4 +100,26 @@ model EncryptedWallet {
   encryptedData   String      // Зашифрованный seed phrase
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
+}
+
+// OnlyFansAccount - OnlyFans аккаунты привязанные к направлению
+model OnlyFansAccount {
+  id                  String      @id @default(cuid())
+  categoryId          String
+  category            Category    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  platformAccountId   String      // ID аккаунта в OnlyFans (от OnlyMonster API)
+  platform            String      @default("onlyfans")  // Платформа (сейчас только onlyfans)
+  username            String      // Username из OnlyFans
+  name                String?     // Имя аккаунта
+  avatar              String?     // URL аватара
+  email               String?     // Email аккаунта
+  subscribePrice      Float?      // Цена подписки
+  organisationId      String?     // ID организации в OnlyMonster
+  lastSyncAt          DateTime?   // Последняя синхронизация транзакций
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+
+  @@unique([categoryId, platformAccountId])  // Один аккаунт не может быть добавлен дважды
+  @@index([categoryId])
+  @@index([platformAccountId])
 }

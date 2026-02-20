@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import CategoryManagerWrapper from '@/components/settings/CategoryManagerWrapper'
 import ChangeMasterPassword from '@/components/settings/ChangeMasterPassword'
+import OnlyMonsterSettings from '@/components/settings/OnlyMonsterSettings'
 
 export default function SettingsPage() {
   const { isUnlocked, unlock, lock, wallets } = useWallet()
@@ -146,6 +147,9 @@ export default function SettingsPage() {
 
       {/* Change Master Password */}
       <ChangeMasterPassword />
+
+      {/* OnlyMonster Integration */}
+      <OnlyMonsterSettings />
 
       {/* Category Management */}
       <Card>
