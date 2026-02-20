@@ -7,6 +7,8 @@ import WalletBalance from '@/components/wallet/WalletBalance'
 import TransactionsList from '@/components/transactions/TransactionsList'
 import CategoryActions from '@/components/categories/CategoryActions'
 import ProjectCharts from '@/components/dashboard/ProjectCharts'
+import OnlyFansAccountManager from '@/components/category/OnlyFansAccountManager'
+import OnlyFansTransactionSync from '@/components/category/OnlyFansTransactionSync'
 
 async function getCategoryData(categoryId: string, userId: string) {
   const category = await prisma.category.findUnique({
@@ -76,6 +78,12 @@ export default async function CategoryPage({ params }: { params: Promise<{ id: s
         </div>
         <p className="text-xs text-gray-500 mt-3">USDT TRC-20</p>
       </div>
+
+      {/* OnlyFans Accounts */}
+      <OnlyFansAccountManager categoryId={category.id} />
+
+      {/* OnlyFans Transaction Sync */}
+      <OnlyFansTransactionSync categoryId={category.id} />
 
       {/* Balance */}
       <WalletBalance address={category.walletAddress} categoryName={category.name} />
