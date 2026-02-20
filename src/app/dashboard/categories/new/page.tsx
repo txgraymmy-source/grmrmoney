@@ -31,8 +31,8 @@ export default function NewCategoryPage() {
     return (
       <div className="max-w-2xl mx-auto">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold">Создание направления</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-3xl font-bold text-white">Создание направления</h1>
+          <p className="text-gray-400 mt-1">
             Шаг 2: Создание кошелька
           </p>
         </div>
@@ -48,23 +48,23 @@ export default function NewCategoryPage() {
   return (
     <div className="max-w-2xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold">Создание направления</h1>
-        <p className="text-muted-foreground mt-1">
+        <h1 className="text-3xl font-bold text-white">Создание направления</h1>
+        <p className="text-gray-400 mt-1">
           Шаг 1: Основная информация
         </p>
       </div>
 
-      <Card>
+      <Card className="bg-gray-900 border-gray-800">
         <CardHeader>
-          <CardTitle>Информация о направлении</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-white">Информация о направлении</CardTitle>
+          <CardDescription className="text-gray-400">
             Укажите название и описание направления (модель/проект)
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Название направления *</Label>
+              <Label htmlFor="name" className="text-gray-300">Название направления *</Label>
               <Input
                 id="name"
                 type="text"
@@ -72,17 +72,19 @@ export default function NewCategoryPage() {
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 required
+                className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Описание (опционально)</Label>
+              <Label htmlFor="description" className="text-gray-300">Описание (опционально)</Label>
               <Input
                 id="description"
                 type="text"
                 placeholder="Краткое описание направления"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500"
               />
             </div>
 
@@ -97,9 +99,9 @@ export default function NewCategoryPage() {
         </CardContent>
       </Card>
 
-      <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-        <h3 className="font-semibold mb-2">Что произойдёт далее:</h3>
-        <ol className="list-decimal list-inside space-y-1 text-sm">
+      <div className="mt-6 p-4 bg-gray-900 border border-gray-800 rounded-lg">
+        <h3 className="font-semibold mb-2 text-white">Что произойдёт далее:</h3>
+        <ol className="list-decimal list-inside space-y-1 text-sm text-gray-300">
           <li>Будет создан новый USDT TRC-20 кошелек</li>
           <li>Вам будет показана seed phrase (12 слов) — сохраните её!</li>
           <li>Вы установите мастер-пароль для шифрования кошелька</li>
