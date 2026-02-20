@@ -41,9 +41,8 @@
     background: #0a0a0a;
   }
 
-  input,
   textarea,
   select {
-    @apply bg-transparent;
+    @apply bg-gray-800 text-white;
   }
 }
