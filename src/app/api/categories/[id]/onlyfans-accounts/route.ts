@@ -106,10 +106,22 @@ export async function POST(
     }
 
     // Получаем данные аккаунта из OnlyMonster API
-    const accountData = await getOnlyMonsterAccount(
-      user.onlyMonsterApiKey,
-      platformAccountId
-    )
+    let accountData
+    try {
+      accountData = await getOnlyMonsterAccount(
+        user.onlyMonsterApiKey,
+        platformAccountId
+      )
+    } catch (error: any) {
+      // Если нет доступа к аккаунту, возвращаем понятную ошибку
+      if (error.message.includes('403') || error.message.includes('Нет доступа')) {
+        return NextResponse.json(
+          { error: 'Нет доступа к этому аккаунту. Возможно, он принадлежит другой организации в OnlyMonster.' },
+          { status: 403 }
+        )
+      }
+      throw error
+    }
 
     // Создаем запись в БД
     const onlyFansAccount = await prisma.onlyFansAccount.create({
