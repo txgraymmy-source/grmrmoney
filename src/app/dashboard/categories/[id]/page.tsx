@@ -4,12 +4,9 @@ import { prisma } from '@/lib/db'
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import WalletBalance from '@/components/wallet/WalletBalance'
 import TransactionsList from '@/components/transactions/TransactionsList'
 import CategoryActions from '@/components/categories/CategoryActions'
 import ProjectCharts from '@/components/dashboard/ProjectCharts'
-import OnlyFansAccountManager from '@/components/category/OnlyFansAccountManager'
-import OnlyFansTransactionSync from '@/components/category/OnlyFansTransactionSync'
 
 async function getCategoryData(categoryId: string, userId: string) {
   const category = await prisma.category.findUnique({
@@ -156,56 +153,39 @@ export default async function CategoryPage({ params }: { params: Promise<{ id: s
         </Card>
       </div>
 
-      {/* Main Content Grid */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Left Column - 2/3 */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Wallet & Actions */}
-          <Card className="bg-gray-900 border-gray-800">
-            <CardHeader>
-              <CardTitle className="text-white">Кошелек</CardTitle>
-              <CardDescription>USDT TRC-20</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="bg-black/40 border border-gray-800 rounded-xl p-4">
-                <p className="font-mono text-sm text-gray-300 break-all">
-                  {category.walletAddress}
-                </p>
-              </div>
+      {/* Quick Actions */}
+      <div className="grid gap-4 md:grid-cols-4">
+        <Link href={`/dashboard/categories/${category.id}/deposit`}>
+          <button className="w-full bg-green-600 hover:bg-green-700 text-white rounded-xl p-4 transition-all flex items-center justify-center gap-3">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+            </svg>
+            <span className="font-semibold">Пополнить</span>
+          </button>
+        </Link>
 
-              <div className="grid gap-3 md:grid-cols-2">
-                <Link href={`/dashboard/categories/${category.id}/deposit`}>
-                  <button className="w-full bg-green-600 hover:bg-green-700 text-white rounded-xl p-4 transition-all flex items-center justify-center gap-3">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-                    </svg>
-                    <span className="font-semibold">Пополнить</span>
-                  </button>
-                </Link>
+        <Link href={`/dashboard/categories/${category.id}/withdraw`}>
+          <button className="w-full bg-purple-600 hover:bg-purple-700 text-white rounded-xl p-4 transition-all flex items-center justify-center gap-3">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+            </svg>
+            <span className="font-semibold">Вывести</span>
+          </button>
+        </Link>
 
-                <Link href={`/dashboard/categories/${category.id}/withdraw`}>
-                  <button className="w-full bg-purple-600 hover:bg-purple-700 text-white rounded-xl p-4 transition-all flex items-center justify-center gap-3">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                    </svg>
-                    <span className="font-semibold">Вывести</span>
-                  </button>
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
+        <Link href={`/dashboard/categories/${category.id}/settings`}>
+          <button className="w-full bg-gray-700 hover:bg-gray-600 text-white rounded-xl p-4 transition-all flex items-center justify-center gap-3">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <span className="font-semibold">Настройки</span>
+          </button>
+        </Link>
 
-          {/* OnlyFans Accounts */}
-          <OnlyFansAccountManager categoryId={category.id} />
-
-          {/* OnlyFans Transaction Sync */}
-          <OnlyFansTransactionSync categoryId={category.id} />
-        </div>
-
-        {/* Right Column - 1/3 */}
-        <div className="space-y-6">
-          {/* Live Balance */}
-          <WalletBalance address={category.walletAddress} categoryName={category.name} />
+        <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+          <div className="text-xs text-gray-500 mb-1">Адрес кошелька</div>
+          <p className="font-mono text-xs text-gray-400 break-all">{category.walletAddress}</p>
         </div>
       </div>
 
