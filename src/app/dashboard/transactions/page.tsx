@@ -74,18 +74,42 @@ export default async function TransactionsPage() {
                           {tx.status === 'confirmed' ? 'Подтверждено' :
                            tx.status === 'pending' ? 'Ожидание' : 'Ошибка'}
                         </span>
+                        <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                          tx.source === 'blockchain'
+                            ? 'bg-blue-100 text-blue-700'
+                            : tx.source === 'onlyfans'
+                            ? 'bg-purple-100 text-purple-700'
+                            : 'bg-yellow-100 text-yellow-700'
+                        }`}>
+                          {tx.source === 'blockchain' ? '⛓️ Blockchain' :
+                           tx.source === 'onlyfans' ? '💎 OnlyFans' : '✏️ Ручная'}
+                        </span>
                       </div>
 
                       <p className="font-medium mb-1">
                         {tx.category?.name || 'Без категории'}
                       </p>
 
-                      <p className="text-sm text-muted-foreground">
-                        {tx.type === 'incoming' ? 'От: ' : 'Кому: '}
-                        <span className="font-mono">
-                          {truncateAddress(tx.type === 'incoming' ? tx.fromAddress : tx.toAddress)}
-                        </span>
-                      </p>
+                      {tx.source === 'blockchain' && tx.fromAddress && tx.toAddress && (
+                        <p className="text-sm text-muted-foreground">
+                          {tx.type === 'incoming' ? 'От: ' : 'Кому: '}
+                          <span className="font-mono">
+                            {truncateAddress(tx.type === 'incoming' ? tx.fromAddress : tx.toAddress)}
+                          </span>
+                        </p>
+                      )}
+
+                      {tx.source === 'onlyfans' && (
+                        <p className="text-sm text-muted-foreground">
+                          💎 OnlyFans transaction
+                        </p>
+                      )}
+
+                      {tx.source === 'manual' && (
+                        <p className="text-sm text-muted-foreground">
+                          ✏️ Ручная коррекция
+                        </p>
+                      )}
 
                       {tx.description && (
                         <p className="text-sm mt-1">{tx.description}</p>
