@@ -42,10 +42,14 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Вход в систему</CardTitle>
+    <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a] px-4">
+      <div className="w-full max-w-md space-y-6">
+        <div className="flex justify-center">
+          <img src="/logo.svg" alt="VAULT by grmr" className="h-12" />
+        </div>
+        <Card className="bg-gray-900 border-gray-800">
+          <CardHeader>
+            <CardTitle className="text-white">Вход в систему</CardTitle>
           <CardDescription>
             Введите ваш email и пароль для входа
           </CardDescription>
@@ -94,6 +98,7 @@ export default function LoginPage() {
           </CardFooter>
         </form>
       </Card>
+      </div>
     </div>
   )
 }

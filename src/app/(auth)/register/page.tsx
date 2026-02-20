@@ -62,10 +62,14 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Регистрация</CardTitle>
+    <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a] px-4">
+      <div className="w-full max-w-md space-y-6">
+        <div className="flex justify-center">
+          <img src="/logo.svg" alt="VAULT by grmr" className="h-12" />
+        </div>
+        <Card className="bg-gray-900 border-gray-800">
+          <CardHeader>
+            <CardTitle className="text-white">Регистрация</CardTitle>
           <CardDescription>
             Создайте аккаунт для управления финансами
           </CardDescription>
@@ -137,6 +141,7 @@ export default function RegisterPage() {
           </CardFooter>
         </form>
       </Card>
+      </div>
     </div>
   )
 }

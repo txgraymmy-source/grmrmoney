@@ -24,8 +24,8 @@ export default async function DashboardLayout({
           <div className="container mx-auto px-4 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-8">
-                <Link href="/dashboard" className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                  GrMrMoney
+                <Link href="/dashboard" className="flex items-center">
+                  <img src="/logo.svg" alt="VAULT by grmr" className="h-8" />
                 </Link>
                 <nav className="hidden md:flex space-x-1">
                   <Link
