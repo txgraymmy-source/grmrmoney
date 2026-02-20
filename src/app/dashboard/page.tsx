@@ -23,31 +23,62 @@ async function getDashboardStats(userId: string) {
     }),
   ])
 
-  // Подсчет статистики
-  const incoming = transactions
+  // Подсчет статистики - разделяем по источникам
+  // Реальный баланс - только blockchain транзакции
+  const blockchainTxs = transactions.filter(tx => tx.source === 'blockchain')
+  const blockchainIncoming = blockchainTxs
     .filter(tx => tx.type === 'incoming')
     .reduce((sum, tx) => sum + parseFloat(tx.amount), 0)
-
-  const outgoing = transactions
+  const blockchainOutgoing = blockchainTxs
     .filter(tx => tx.type === 'outgoing')
     .reduce((sum, tx) => sum + parseFloat(tx.amount), 0)
+  const realBalance = blockchainIncoming - blockchainOutgoing
 
-  const totalBalance = incoming - outgoing
-  const totalTurnover = incoming + outgoing
+  // OnlyFans доходы/расходы (виртуальный учет)
+  const onlyfansTxs = transactions.filter(tx => tx.source === 'onlyfans')
+  const onlyfansIncoming = onlyfansTxs
+    .filter(tx => tx.type === 'incoming')
+    .reduce((sum, tx) => sum + parseFloat(tx.amount), 0)
+  const onlyfansOutgoing = onlyfansTxs
+    .filter(tx => tx.type === 'outgoing')
+    .reduce((sum, tx) => sum + parseFloat(tx.amount), 0)
+  const onlyfansBalance = onlyfansIncoming - onlyfansOutgoing
 
-  // Транзакции за последние 30 дней
+  // Общая статистика для графиков
+  const totalIncoming = transactions
+    .filter(tx => tx.type === 'incoming')
+    .reduce((sum, tx) => sum + parseFloat(tx.amount), 0)
+  const totalOutgoing = transactions
+    .filter(tx => tx.type === 'outgoing')
+    .reduce((sum, tx) => sum + parseFloat(tx.amount), 0)
+  const totalTurnover = totalIncoming + totalOutgoing
+
+  // Транзакции за последние 30 дней (blockchain)
   const thirtyDaysAgo = new Date()
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
-  const recentTransactions = transactions.filter(
+  const recentBlockchainTxs = blockchainTxs.filter(
     tx => new Date(tx.timestamp) >= thirtyDaysAgo
   )
 
-  const recentIncoming = recentTransactions
+  const recentBlockchainIncoming = recentBlockchainTxs
     .filter(tx => tx.type === 'incoming')
     .reduce((sum, tx) => sum + parseFloat(tx.amount), 0)
 
-  const recentOutgoing = recentTransactions
+  const recentBlockchainOutgoing = recentBlockchainTxs
+    .filter(tx => tx.type === 'outgoing')
+    .reduce((sum, tx) => sum + parseFloat(tx.amount), 0)
+
+  // OnlyFans за последние 30 дней
+  const recentOnlyfansTxs = onlyfansTxs.filter(
+    tx => new Date(tx.timestamp) >= thirtyDaysAgo
+  )
+
+  const recentOnlyfansIncoming = recentOnlyfansTxs
+    .filter(tx => tx.type === 'incoming')
+    .reduce((sum, tx) => sum + parseFloat(tx.amount), 0)
+
+  const recentOnlyfansOutgoing = recentOnlyfansTxs
     .filter(tx => tx.type === 'outgoing')
     .reduce((sum, tx) => sum + parseFloat(tx.amount), 0)
 
@@ -78,12 +109,22 @@ async function getDashboardStats(userId: string) {
     categories,
     transactions: transactions.slice(0, 10),
     stats: {
-      totalBalance,
-      incoming,
-      outgoing,
+      // Реальный баланс (blockchain)
+      realBalance,
+      blockchainIncoming,
+      blockchainOutgoing,
+      recentBlockchainIncoming,
+      recentBlockchainOutgoing,
+      // OnlyFans баланс
+      onlyfansBalance,
+      onlyfansIncoming,
+      onlyfansOutgoing,
+      recentOnlyfansIncoming,
+      recentOnlyfansOutgoing,
+      // Общая статистика
+      totalIncoming,
+      totalOutgoing,
       totalTurnover,
-      recentIncoming,
-      recentOutgoing,
       totalCategories: categories.length,
       totalTransactions: transactions.length,
     },
@@ -123,43 +164,50 @@ export default async function DashboardPage() {
 
       {/* Main Stats */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        {/* Реальный баланс - только крипто */}
         <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20 card-rounded overflow-hidden">
           <div className="h-1 bg-gradient-to-r from-blue-500 to-blue-600"></div>
           <CardHeader className="pb-3">
-            <CardDescription className="text-blue-400/80">Общий баланс</CardDescription>
-            <CardTitle className="text-3xl text-white">{formatUSDT(stats.totalBalance)} USDT</CardTitle>
+            <CardDescription className="text-blue-400/80">⛓️ Реальный баланс (Крипто)</CardDescription>
+            <CardTitle className="text-3xl text-white">{formatUSDT(stats.realBalance)} USDT</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-xs text-gray-500">Все направления</p>
+            <p className="text-xs text-gray-500">На криптокошельках</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-green-500/10 to-green-600/5 border-green-500/20 card-rounded overflow-hidden">
-          <div className="h-1 bg-gradient-to-r from-green-500 to-green-600"></div>
-          <CardHeader className="pb-3">
-            <CardDescription className="text-green-400/80">Входящие (30 дней)</CardDescription>
-            <CardTitle className="text-3xl text-white">+{formatUSDT(stats.recentIncoming)}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-gray-500">Всего: {formatUSDT(stats.incoming)} USDT</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-red-500/10 to-red-600/5 border-red-500/20 card-rounded overflow-hidden">
-          <div className="h-1 bg-gradient-to-r from-red-500 to-red-600"></div>
-          <CardHeader className="pb-3">
-            <CardDescription className="text-red-400/80">Исходящие (30 дней)</CardDescription>
-            <CardTitle className="text-3xl text-white">-{formatUSDT(stats.recentOutgoing)}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-gray-500">Всего: {formatUSDT(stats.outgoing)} USDT</p>
-          </CardContent>
-        </Card>
-
+        {/* OnlyFans баланс */}
         <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/20 card-rounded overflow-hidden">
           <div className="h-1 bg-gradient-to-r from-purple-500 to-purple-600"></div>
           <CardHeader className="pb-3">
-            <CardDescription className="text-purple-400/80">Оборот</CardDescription>
+            <CardDescription className="text-purple-400/80">💎 OnlyFans доходы</CardDescription>
+            <CardTitle className="text-3xl text-white">{formatUSDT(stats.onlyfansBalance)} USD</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-green-400">Дебет: {formatUSDT(stats.onlyfansIncoming)}</span>
+              <span className="text-red-400">Кредит: {formatUSDT(stats.onlyfansOutgoing)}</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Входящие крипто за 30 дней */}
+        <Card className="bg-gradient-to-br from-green-500/10 to-green-600/5 border-green-500/20 card-rounded overflow-hidden">
+          <div className="h-1 bg-gradient-to-r from-green-500 to-green-600"></div>
+          <CardHeader className="pb-3">
+            <CardDescription className="text-green-400/80">Крипто входящие (30 дней)</CardDescription>
+            <CardTitle className="text-3xl text-white">+{formatUSDT(stats.recentBlockchainIncoming)}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-xs text-gray-500">Всего: {formatUSDT(stats.blockchainIncoming)} USDT</p>
+          </CardContent>
+        </Card>
+
+        {/* Оборот */}
+        <Card className="bg-gradient-to-br from-orange-500/10 to-orange-600/5 border-orange-500/20 card-rounded overflow-hidden">
+          <div className="h-1 bg-gradient-to-r from-orange-500 to-orange-600"></div>
+          <CardHeader className="pb-3">
+            <CardDescription className="text-orange-400/80">Общий оборот</CardDescription>
             <CardTitle className="text-3xl text-white">{formatUSDT(stats.totalTurnover)}</CardTitle>
           </CardHeader>
           <CardContent>
@@ -204,13 +252,21 @@ export default async function DashboardPage() {
             ) : (
               <div className="space-y-3">
                 {categories.slice(0, 5).map((category) => {
-                  const catIncoming = category.transactions
+                  // Реальный баланс - только blockchain транзакции
+                  const blockchainTxs = category.transactions.filter(tx => tx.source === 'blockchain')
+                  const catBlockchainIncoming = blockchainTxs
                     .filter(tx => tx.type === 'incoming')
                     .reduce((sum, tx) => sum + parseFloat(tx.amount), 0)
-                  const catOutgoing = category.transactions
+                  const catBlockchainOutgoing = blockchainTxs
                     .filter(tx => tx.type === 'outgoing')
                     .reduce((sum, tx) => sum + parseFloat(tx.amount), 0)
-                  const catBalance = catIncoming - catOutgoing
+                  const catRealBalance = catBlockchainIncoming - catBlockchainOutgoing
+
+                  // OnlyFans баланс
+                  const onlyfansTxs = category.transactions.filter(tx => tx.source === 'onlyfans')
+                  const catOnlyfansIncoming = onlyfansTxs
+                    .filter(tx => tx.type === 'incoming')
+                    .reduce((sum, tx) => sum + parseFloat(tx.amount), 0)
 
                   return (
                     <Link key={category.id} href={`/dashboard/categories/${category.id}`}>
@@ -218,13 +274,20 @@ export default async function DashboardPage() {
                         <div className="flex items-center justify-between">
                           <div className="flex-1">
                             <h3 className="font-medium text-white">{category.name}</h3>
-                            <p className="text-xs text-gray-500 mt-1">
-                              {category.transactions.length} транзакций
-                            </p>
+                            <div className="flex items-center gap-3 mt-1">
+                              <p className="text-xs text-gray-500">
+                                ⛓️ {blockchainTxs.length} крипто
+                              </p>
+                              {onlyfansTxs.length > 0 && (
+                                <p className="text-xs text-purple-400">
+                                  💎 {onlyfansTxs.length} OF ({formatUSDT(catOnlyfansIncoming)})
+                                </p>
+                              )}
+                            </div>
                           </div>
                           <div className="text-right">
-                            <p className={`text-lg font-semibold ${catBalance >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                              {catBalance >= 0 ? '+' : ''}{formatUSDT(catBalance)}
+                            <p className={`text-lg font-semibold ${catRealBalance >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                              {catRealBalance >= 0 ? '+' : ''}{formatUSDT(catRealBalance)}
                             </p>
                             <p className="text-xs text-gray-500">USDT</p>
                           </div>

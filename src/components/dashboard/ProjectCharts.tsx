@@ -10,6 +10,7 @@ interface Transaction {
   amount: string
   type: string
   timestamp: Date
+  source?: string
 }
 
 interface ProjectChartsProps {
@@ -19,6 +20,7 @@ interface ProjectChartsProps {
 
 export default function ProjectCharts({ transactions, projectName }: ProjectChartsProps) {
   const [selectedPeriod, setSelectedPeriod] = useState('30')
+  const [selectedSource, setSelectedSource] = useState('blockchain')
 
   const periods = [
     { value: '7', label: '7 дней' },
@@ -27,15 +29,31 @@ export default function ProjectCharts({ transactions, projectName }: ProjectChar
     { value: 'all', label: 'Всё время' },
   ]
 
-  // Filter by period
-  const filteredTransactions = useMemo(() => {
-    if (selectedPeriod === 'all') return transactions
+  const sources = [
+    { value: 'blockchain', label: '⛓️ Крипто', description: 'Реальный баланс' },
+    { value: 'onlyfans', label: '💎 OnlyFans', description: 'Виртуальный учет' },
+    { value: 'all', label: '📊 Все', description: 'Общая статистика' },
+  ]
 
-    const days = parseInt(selectedPeriod)
-    const cutoffDate = new Date()
-    cutoffDate.setDate(cutoffDate.getDate() - days)
-    return transactions.filter(tx => new Date(tx.timestamp) >= cutoffDate)
-  }, [transactions, selectedPeriod])
+  // Filter by period and source
+  const filteredTransactions = useMemo(() => {
+    let filtered = transactions
+
+    // Filter by source
+    if (selectedSource !== 'all') {
+      filtered = filtered.filter(tx => tx.source === selectedSource)
+    }
+
+    // Filter by period
+    if (selectedPeriod !== 'all') {
+      const days = parseInt(selectedPeriod)
+      const cutoffDate = new Date()
+      cutoffDate.setDate(cutoffDate.getDate() - days)
+      filtered = filtered.filter(tx => new Date(tx.timestamp) >= cutoffDate)
+    }
+
+    return filtered
+  }, [transactions, selectedPeriod, selectedSource])
 
   // Calculate stats
   const stats = useMemo(() => {
@@ -134,26 +152,54 @@ export default function ProjectCharts({ transactions, projectName }: ProjectChar
 
   return (
     <div className="space-y-6">
-      {/* Period Filter */}
+      {/* Filters */}
       <Card className="bg-gray-900 border-gray-800">
-        <CardContent className="pt-6">
-          <div className="flex gap-2 flex-wrap">
-            <label className="text-sm text-gray-400 mb-2 block w-full">Период</label>
-            {periods.map((period) => (
-              <Button
-                key={period.value}
-                variant={selectedPeriod === period.value ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setSelectedPeriod(period.value)}
-                className={
-                  selectedPeriod === period.value
-                    ? 'bg-purple-600 hover:bg-purple-700 text-white'
-                    : 'bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700'
-                }
-              >
-                {period.label}
-              </Button>
-            ))}
+        <CardContent className="pt-6 space-y-4">
+          {/* Source Filter */}
+          <div>
+            <label className="text-sm text-gray-400 mb-2 block">Источник</label>
+            <div className="flex gap-2 flex-wrap">
+              {sources.map((source) => (
+                <Button
+                  key={source.value}
+                  variant={selectedSource === source.value ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setSelectedSource(source.value)}
+                  className={
+                    selectedSource === source.value
+                      ? 'bg-purple-600 hover:bg-purple-700 text-white'
+                      : 'bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700'
+                  }
+                >
+                  <span className="flex items-center gap-2">
+                    {source.label}
+                    <span className="text-xs opacity-70">• {source.description}</span>
+                  </span>
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          {/* Period Filter */}
+          <div>
+            <label className="text-sm text-gray-400 mb-2 block">Период</label>
+            <div className="flex gap-2 flex-wrap">
+              {periods.map((period) => (
+                <Button
+                  key={period.value}
+                  variant={selectedPeriod === period.value ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setSelectedPeriod(period.value)}
+                  className={
+                    selectedPeriod === period.value
+                      ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                      : 'bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700'
+                  }
+                >
+                  {period.label}
+                </Button>
+              ))}
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -162,7 +208,9 @@ export default function ProjectCharts({ transactions, projectName }: ProjectChar
         {/* Income vs Expense */}
         <Card className="bg-gray-900 border-gray-800">
           <CardHeader>
-            <CardTitle className="text-white">Доходы vs Расходы</CardTitle>
+            <CardTitle className="text-white">
+              {selectedSource === 'blockchain' ? '⛓️ Крипто' : selectedSource === 'onlyfans' ? '💎 OnlyFans' : '📊 Все'} • Доходы vs Расходы
+            </CardTitle>
             <CardDescription className="text-gray-400">{projectName}</CardDescription>
           </CardHeader>
           <CardContent>
@@ -192,7 +240,7 @@ export default function ProjectCharts({ transactions, projectName }: ProjectChar
               </ResponsiveContainer>
             ) : (
               <div className="h-[250px] flex items-center justify-center text-gray-500">
-                Нет данных
+                Нет данных для {selectedSource === 'blockchain' ? 'крипто' : selectedSource === 'onlyfans' ? 'OnlyFans' : 'выбранного источника'}
               </div>
             )}
           </CardContent>
@@ -202,21 +250,29 @@ export default function ProjectCharts({ transactions, projectName }: ProjectChar
         <Card className="bg-gray-900 border-gray-800">
           <CardHeader>
             <CardTitle className="text-white">Статистика</CardTitle>
-            <CardDescription className="text-gray-400">За выбранный период</CardDescription>
+            <CardDescription className="text-gray-400">
+              {selectedSource === 'blockchain' ? 'Реальный баланс (крипто)' :
+               selectedSource === 'onlyfans' ? 'Виртуальный учет (OnlyFans)' :
+               'Общая статистика'} • За выбранный период
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex justify-between items-center p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
-              <span className="text-gray-300">Доходы</span>
-              <span className="text-green-400 font-semibold text-lg">+{formatCurrency(stats.incoming)} USDT</span>
+              <span className="text-gray-300">{selectedSource === 'onlyfans' ? 'Дебет' : 'Доходы'}</span>
+              <span className="text-green-400 font-semibold text-lg">
+                +{formatCurrency(stats.incoming)} {selectedSource === 'blockchain' ? 'USDT' : selectedSource === 'onlyfans' ? 'USD' : 'USD'}
+              </span>
             </div>
             <div className="flex justify-between items-center p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
-              <span className="text-gray-300">Расходы</span>
-              <span className="text-red-400 font-semibold text-lg">-{formatCurrency(stats.outgoing)} USDT</span>
+              <span className="text-gray-300">{selectedSource === 'onlyfans' ? 'Кредит' : 'Расходы'}</span>
+              <span className="text-red-400 font-semibold text-lg">
+                -{formatCurrency(stats.outgoing)} {selectedSource === 'blockchain' ? 'USDT' : selectedSource === 'onlyfans' ? 'USD' : 'USD'}
+              </span>
             </div>
             <div className="flex justify-between items-center p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg">
               <span className="text-gray-300">Баланс</span>
               <span className={`font-semibold text-lg ${stats.incoming >= stats.outgoing ? 'text-green-400' : 'text-red-400'}`}>
-                {stats.incoming >= stats.outgoing ? '+' : ''}{formatCurrency(stats.incoming - stats.outgoing)} USDT
+                {stats.incoming >= stats.outgoing ? '+' : ''}{formatCurrency(stats.incoming - stats.outgoing)} {selectedSource === 'blockchain' ? 'USDT' : selectedSource === 'onlyfans' ? 'USD' : 'USD'}
               </span>
             </div>
           </CardContent>
