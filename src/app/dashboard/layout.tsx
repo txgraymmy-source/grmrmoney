@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import { authOptions } from '@/lib/auth'
 import { WalletProvider } from '@/contexts/WalletContext'
 import Link from 'next/link'
-import { Button } from '@/components/ui/button'
+import UserMenu from '@/components/layout/UserMenu'
 
 export default async function DashboardLayout({
   children,
@@ -46,30 +46,10 @@ export default async function DashboardLayout({
                   >
                     Транзакции
                   </Link>
-                  <Link
-                    href="/dashboard/settings"
-                    className="px-4 py-2 rounded-xl text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-800 transition-all"
-                  >
-                    Настройки
-                  </Link>
                 </nav>
               </div>
               <div className="flex items-center space-x-4">
-                <div className="hidden md:block">
-                  <p className="text-sm text-gray-400">
-                    {session.user?.email}
-                  </p>
-                </div>
-                <form action="/api/auth/signout" method="post">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    type="submit"
-                    className="bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700 hover:text-white rounded-xl"
-                  >
-                    Выйти
-                  </Button>
-                </form>
+                <UserMenu email={session.user?.email || ''} />
               </div>
             </div>
           </div>

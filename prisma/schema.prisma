@@ -16,6 +16,8 @@ model User {
   email                  String                @unique
   passwordHash           String
   name                   String?
+  agencyName             String?               // Название агентства
+  phone                  String?               // Телефон
   onlyMonsterApiKey      String?               // API ключ для OnlyMonster
   createdAt              DateTime              @default(now())
   updatedAt              DateTime              @updatedAt
