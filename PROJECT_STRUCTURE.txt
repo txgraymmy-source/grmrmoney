@@ -1,0 +1,137 @@
+GrMrMoney - Структура проекта
+================================
+
+📁 grmrmoney/
+│
+├── 📄 Configuration Files
+│   ├── package.json              - Зависимости и скрипты
+│   ├── tsconfig.json             - TypeScript настройки
+│   ├── next.config.js            - Next.js конфигурация
+│   ├── tailwind.config.ts        - Tailwind CSS
+│   ├── postcss.config.js         - PostCSS
+│   ├── .env                      - Переменные окружения (локальные)
+│   ├── .env.example              - Пример переменных
+│   └── .gitignore                - Git ignore правила
+│
+├── 📚 Documentation
+│   ├── README.md                 - Основная документация
+│   ├── QUICKSTART.md             - Быстрый старт (5 шагов)
+│   ├── SETUP_GUIDE.md            - Подробное руководство
+│   └── IMPLEMENTATION.md         - Отчёт о реализации
+│
+├── 🗄️ prisma/
+│   └── schema.prisma             - Схема базы данных
+│
+└── 📂 src/
+    │
+    ├── 🎨 app/                   - Next.js App Router
+    │   │
+    │   ├── (auth)/               - Группа маршрутов: Аутентификация
+    │   │   ├── login/
+    │   │   │   └── page.tsx      - Страница входа
+    │   │   └── register/
+    │   │       └── page.tsx      - Страница регистрации
+    │   │
+    │   ├── (dashboard)/          - Группа маршрутов: Dashboard (защищено)
+    │   │   ├── layout.tsx        - Layout с навигацией
+    │   │   ├── page.tsx          - Главная страница (обзор)
+    │   │   │
+    │   │   ├── categories/       - Направления
+    │   │   │   ├── page.tsx      - Список направлений
+    │   │   │   ├── new/
+    │   │   │   │   └── page.tsx  - Создание направления
+    │   │   │   └── [id]/
+    │   │   │       └── page.tsx  - Детали направления
+    │   │   │
+    │   │   ├── transactions/     - Транзакции
+    │   │   │   └── page.tsx      - История транзакций
+    │   │   │
+    │   │   └── settings/         - Настройки
+    │   │       └── page.tsx      - Безопасность кошельков
+    │   │
+    │   ├── api/                  - REST API Endpoints
+    │   │   │
+    │   │   ├── auth/
+    │   │   │   ├── [...nextauth]/
+    │   │   │   │   └── route.ts  - NextAuth endpoints
+    │   │   │   └── register/
+    │   │   │       └── route.ts  - Регистрация пользователей
+    │   │   │
+    │   │   ├── categories/
+    │   │   │   ├── route.ts      - GET/POST категории
+    │   │   │   └── [id]/
+    │   │   │       └── route.ts  - GET/DELETE конкретной категории
+    │   │   │
+    │   │   ├── transactions/
+    │   │   │   └── sync/
+    │   │   │       └── route.ts  - Синхронизация с блокчейном
+    │   │   │
+    │   │   └── wallets/
+    │   │       ├── create/
+    │   │       │   └── route.ts  - Сохранение зашифрованных кошельков
+    │   │       ├── encrypted/
+    │   │       │   └── route.ts  - Получение зашифрованных кошельков
+    │   │       └── balance/
+    │   │           └── route.ts  - Получение баланса
+    │   │
+    │   ├── layout.tsx            - Root layout
+    │   ├── page.tsx              - Home (редирект на dashboard)
+    │   └── globals.css           - Глобальные стили
+    │
+    ├── 🧩 components/            - React компоненты
+    │   │
+    │   ├── ui/                   - shadcn/ui базовые компоненты
+    │   │   ├── button.tsx        - Кнопка
+    │   │   ├── card.tsx          - Карточка
+    │   │   ├── input.tsx         - Поле ввода
+    │   │   └── label.tsx         - Метка
+    │   │
+    │   └── wallet/               - Компоненты для кошельков
+    │       ├── CreateWalletFlow.tsx    - Процесс создания кошелька
+    │       ├── WalletBalance.tsx       - Отображение баланса
+    │       └── SendTransaction.tsx     - Отправка транзакций
+    │
+    ├── 🔄 contexts/              - React Context
+    │   └── WalletContext.tsx     - Управление расшифрованными кошельками
+    │
+    ├── 📚 lib/                   - Библиотеки и утилиты
+    │   │
+    │   ├── tron/                 - TRON Blockchain
+    │   │   ├── tronweb.ts        - TronWeb instance и утилиты
+    │   │   ├── wallet.ts         - Генерация кошельков
+    │   │   ├── balance.ts        - Получение балансов
+    │   │   ├── transactions.ts   - Отправка транзакций
+    │   │   └── monitor.ts        - Мониторинг транзакций
+    │   │
+    │   ├── crypto/               - Криптография
+    │   │   └── encryption.ts     - AES-256 шифрование/дешифрование
+    │   │
+    │   ├── auth.ts               - NextAuth конфигурация
+    │   ├── db.ts                 - Prisma client
+    │   └── utils.ts              - Общие утилиты
+    │
+    ├── 📝 types/                 - TypeScript типы
+    │   ├── index.ts              - Основные типы приложения
+    │   └── next-auth.d.ts        - Расширение типов NextAuth
+    │
+    └── middleware.ts             - Next.js middleware (защита роутов)
+
+
+🔑 Ключевые файлы для понимания архитектуры:
+============================================
+
+1. prisma/schema.prisma          - Схема БД (User, Category, Transaction, EncryptedWallet)
+2. src/contexts/WalletContext.tsx - Управление расшифрованными ключами в памяти
+3. src/lib/tron/wallet.ts        - Генерация TRON кошельков с seed phrase
+4. src/lib/crypto/encryption.ts  - AES-256 шифрование приватных ключей
+5. src/components/wallet/CreateWalletFlow.tsx - Полный процесс создания кошелька
+
+📊 Статистика проекта:
+=====================
+- TypeScript файлы: 40+
+- API endpoints: 10
+- Страницы: 8
+- Компоненты: 10+
+- Библиотечные модули: 10
+
+🎯 Статус: Полностью реализовано и готово к запуску!

@@ -1,0 +1,249 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                    String                @id @default(cuid())
+  email                 String                @unique
+  passwordHash          String
+  name                  String?
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  onlyMonsterApiKey     String?
+  agencyName            String?
+  phone                 String?
+  accountType           String                @default("crypto")
+  categories            Category[]
+  contacts              Contact[]
+  dashboardConfig       DashboardConfig?
+  funds                 Fund[]
+  gasWallet             GasWallet?
+  notifications         Notification[]
+  salaryPayments        SalaryPayment[]
+  transactions          Transaction[]
+  transactionCategories TransactionCategory[]
+}
+
+model Category {
+  id               String            @id @default(cuid())
+  name             String
+  description      String?
+  walletAddress    String            @unique
+  archived         Boolean           @default(false)
+  userId           String
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contacts         Contact[]
+  encryptedWallet  EncryptedWallet?
+  onlyFansAccounts OnlyFansAccount[]
+  transactions     Transaction[]
+
+  @@index([userId])
+}
+
+model TransactionCategory {
+  id           String        @id @default(cuid())
+  name         String
+  icon         String
+  color        String
+  type         String
+  userId       String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  transactions Transaction[]
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Transaction {
+  id                    String               @id @default(cuid())
+  txHash                String?              @unique
+  fromAddress           String?
+  toAddress             String?
+  amount                String
+  type                  String
+  status                String
+  description           String?
+  blockNumber           Int?
+  timestamp             DateTime
+  categoryId            String?
+  transactionCategoryId String?
+  userId                String
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+  onlyFansFanId         String?
+  onlyFansTransactionId String?              @unique
+  onlyFansType          String?
+  source                String               @default("blockchain")
+  fundAllocations       FundAllocation[]
+  category              Category?            @relation(fields: [categoryId], references: [id])
+  transactionCategory   TransactionCategory? @relation(fields: [transactionCategoryId], references: [id])
+  user                  User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([categoryId])
+  @@index([transactionCategoryId])
+  @@index([timestamp])
+  @@index([source])
+}
+
+model EncryptedWallet {
+  id            String   @id @default(cuid())
+  categoryId    String   @unique
+  encryptedData String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  category      Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+}
+
+model OnlyFansAccount {
+  id                String    @id @default(cuid())
+  categoryId        String
+  platformAccountId String
+  platform          String    @default("onlyfans")
+  username          String
+  name              String?
+  avatar            String?
+  email             String?
+  subscribePrice    Float?
+  organisationId    String?
+  lastSyncAt        DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  category          Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([categoryId, platformAccountId])
+  @@index([categoryId])
+  @@index([platformAccountId])
+}
+
+model Fund {
+  id              String               @id @default(cuid())
+  name            String
+  description     String?
+  icon            String?
+  color           String?
+  walletAddress   String               @unique
+  targetPercent   Float
+  isActive        Boolean              @default(true)
+  userId          String
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  user            User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  allocations     FundAllocation[]
+  encryptedWallet FundEncryptedWallet?
+
+  @@index([userId])
+}
+
+model FundAllocation {
+  id            String      @id @default(cuid())
+  fundId        String
+  transactionId String
+  amount        String
+  status        String      @default("pending")
+  txHash        String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  fund          Fund        @relation(fields: [fundId], references: [id], onDelete: Cascade)
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+
+  @@index([fundId])
+  @@index([transactionId])
+}
+
+model FundEncryptedWallet {
+  id            String   @id @default(cuid())
+  fundId        String   @unique
+  encryptedData String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  fund          Fund     @relation(fields: [fundId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  data      Json?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, read])
+}
+
+model DashboardConfig {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  widgets   Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model GasWallet {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  walletAddress String   @unique
+  encryptedData String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Contact {
+  id            String          @id @default(cuid())
+  name          String
+  walletAddress String
+  notes         String?
+  userId        String
+  categoryId    String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  category      Category?       @relation(fields: [categoryId], references: [id])
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payments      SalaryPayment[]
+  salaryRules   SalaryRule[]
+
+  @@index([userId])
+}
+
+model SalaryRule {
+  id        String  @id @default(cuid())
+  contactId String
+  type      String
+  amount    Float?
+  percent   Float?
+  source    String?
+  label     String?
+  contact   Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+}
+
+model SalaryPayment {
+  id          String   @id @default(cuid())
+  contactId   String
+  userId      String
+  amount      String
+  period      String
+  status      String   @default("completed")
+  txHash      String?
+  fromAddress String?
+  note        String?
+  createdAt   DateTime @default(now())
+  contact     Contact  @relation(fields: [contactId], references: [id])
+  user        User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([contactId])
+}
