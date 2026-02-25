@@ -24,6 +24,7 @@ model User {
   funds                 Fund[]
   gasWallet             GasWallet?
   notifications         Notification[]
+  positions             Position[]
   salaryPayments        SalaryPayment[]
   transactions          Transaction[]
   transactionCategories TransactionCategory[]
@@ -40,6 +41,7 @@ model Category {
   updatedAt        DateTime          @updatedAt
   user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   contacts         Contact[]
+  employeeProjects ContactCategory[]
   encryptedWallet  EncryptedWallet?
   onlyFansAccounts OnlyFansAccount[]
   transactions     Transaction[]
@@ -203,31 +205,64 @@ model GasWallet {
 }
 
 model Contact {
-  id            String          @id @default(cuid())
-  name          String
-  walletAddress String
-  notes         String?
-  userId        String
-  categoryId    String?
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-  category      Category?       @relation(fields: [categoryId], references: [id])
-  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  payments      SalaryPayment[]
-  salaryRules   SalaryRule[]
+  id               String            @id @default(cuid())
+  name             String
+  walletAddress    String
+  notes            String?
+  userId           String
+  categoryId       String?
+  positionId       String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  category         Category?         @relation(fields: [categoryId], references: [id])
+  position         Position?         @relation(fields: [positionId], references: [id])
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  employeeProjects ContactCategory[]
+  payments         SalaryPayment[]
+  salaryRules      SalaryRule[]
 
   @@index([userId])
 }
 
+model Position {
+  id        String    @id @default(cuid())
+  name      String
+  icon      String?
+  color     String?
+  userId    String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  employees Contact[]
+
+  @@index([userId])
+}
+
+model ContactCategory {
+  id          String        @id @default(cuid())
+  contactId   String
+  categoryId  String
+  createdAt   DateTime      @default(now())
+  contact     Contact       @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  category    Category      @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  salaryRules SalaryRule[]
+
+  @@unique([contactId, categoryId])
+  @@index([contactId])
+  @@index([categoryId])
+}
+
 model SalaryRule {
-  id        String  @id @default(cuid())
-  contactId String
-  type      String
-  amount    Float?
-  percent   Float?
-  source    String?
-  label     String?
-  contact   Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  id                String           @id @default(cuid())
+  contactId         String?
+  contactCategoryId String?
+  type              String
+  amount            Float?
+  percent           Float?
+  source            String?
+  label             String?
+  contact           Contact?          @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  contactCategory   ContactCategory?  @relation(fields: [contactCategoryId], references: [id], onDelete: Cascade)
 }
 
 model SalaryPayment {

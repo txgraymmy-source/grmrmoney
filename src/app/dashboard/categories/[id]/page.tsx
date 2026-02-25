@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button'
 import TransactionsList from '@/components/transactions/TransactionsList'
 import CategoryActions from '@/components/categories/CategoryActions'
 import ProjectCharts from '@/components/dashboard/ProjectCharts'
+import ProjectEmployeesSection from '@/components/employees/ProjectEmployeesSection'
+import { calculateSalary, currentPeriod } from '@/lib/salary'
 
 async function getCategoryData(categoryId: string, userId: string) {
   const category = await prisma.category.findUnique({
@@ -71,11 +73,49 @@ export default async function CategoryPage({ params }: { params: Promise<{ id: s
   }
 
   const { id } = await params
+  const period = currentPeriod()
   const category = await getCategoryData(id, session.user.id)
 
   if (!category) {
     notFound()
   }
+
+  // Fetch employee-project pairs for this category
+  const employeePairs = await prisma.contactCategory.findMany({
+    where: { categoryId: id },
+    include: {
+      contact: {
+        include: {
+          position: { select: { name: true, icon: true, color: true } },
+        },
+      },
+      salaryRules: true,
+    },
+    orderBy: { createdAt: 'asc' },
+  })
+
+  const pairsWithAmounts = employeePairs.map(pair => ({
+    id: pair.id,
+    contactId: pair.contactId,
+    contact: {
+      id: pair.contact.id,
+      name: pair.contact.name,
+      walletAddress: pair.contact.walletAddress,
+      position: pair.contact.position ?? null,
+    },
+    salaryRules: pair.salaryRules,
+    calculatedAmount: calculateSalary(
+      pair.salaryRules,
+      category.transactions,
+      period
+    ),
+  }))
+
+  const allContacts = await prisma.contact.findMany({
+    where: { userId: session.user.id },
+    select: { id: true, name: true },
+    orderBy: { name: 'asc' },
+  })
 
   const formatUSDT = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -192,6 +232,14 @@ export default async function CategoryPage({ params }: { params: Promise<{ id: s
 
       {/* Project Charts */}
       <ProjectCharts transactions={category.transactions} projectName={category.name} />
+
+      {/* Employees section */}
+      <ProjectEmployeesSection
+        categoryId={category.id}
+        pairs={pairsWithAmounts}
+        availableContacts={allContacts}
+        period={period}
+      />
 
       {/* Transactions */}
       <TransactionsList categoryId={category.id} initialTransactions={category.transactions} />

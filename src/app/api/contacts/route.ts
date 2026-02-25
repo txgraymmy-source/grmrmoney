@@ -9,6 +9,7 @@ const createContactSchema = z.object({
   walletAddress: z.string().min(1, 'TRON-адрес обязателен'),
   notes: z.string().optional(),
   categoryId: z.string().optional(),
+  positionId: z.string().optional(),
 })
 
 export async function GET(request: NextRequest) {
@@ -26,6 +27,10 @@ export async function GET(request: NextRequest) {
       include: {
         salaryRules: true,
         category: { select: { id: true, name: true } },
+        position: { select: { id: true, name: true, icon: true, color: true } },
+        employeeProjects: {
+          include: { category: { select: { id: true, name: true } }, salaryRules: true },
+        },
       },
       orderBy: { createdAt: 'desc' },
       ...(take ? { take } : {}),
@@ -46,7 +51,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name, walletAddress, notes, categoryId } = createContactSchema.parse(body)
+    const { name, walletAddress, notes, categoryId, positionId } = createContactSchema.parse(body)
 
     const contact = await prisma.contact.create({
       data: {
@@ -54,11 +59,16 @@ export async function POST(request: NextRequest) {
         walletAddress,
         notes,
         categoryId: categoryId || null,
+        positionId: positionId || null,
         userId: session.user.id,
       },
       include: {
         salaryRules: true,
         category: { select: { id: true, name: true } },
+        position: { select: { id: true, name: true, icon: true, color: true } },
+        employeeProjects: {
+          include: { category: { select: { id: true, name: true } }, salaryRules: true },
+        },
       },
     })
 

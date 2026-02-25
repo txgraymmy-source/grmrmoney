@@ -20,10 +20,11 @@ interface NavItemConfig {
 }
 
 const NAV_ITEMS: NavItemConfig[] = [
-  { label: 'Обзор',    href: '/dashboard' },
-  { label: 'Фонды',    href: '/dashboard/funds',       dropdownHref: '/dashboard/funds',       dropdownKey: 'funds' },
-  { label: 'Модели',   href: '/dashboard/categories',  dropdownHref: '/dashboard/categories',  dropdownKey: 'categories' },
-  { label: 'Зарплата', href: '/dashboard/salary' },
+  { label: 'Обзор',       href: '/dashboard' },
+  { label: 'Фонды',       href: '/dashboard/funds',       dropdownHref: '/dashboard/funds',       dropdownKey: 'funds' },
+  { label: 'Модели',      href: '/dashboard/categories',  dropdownHref: '/dashboard/categories',  dropdownKey: 'categories' },
+  { label: 'Сотрудники',  href: '/dashboard/employees' },
+  { label: 'Зарплата',    href: '/dashboard/salary' },
 ]
 
 // Cache loaded items per key so we don't refetch on every hover

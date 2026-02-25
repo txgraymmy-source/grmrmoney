@@ -9,6 +9,7 @@ const updateContactSchema = z.object({
   walletAddress: z.string().min(1).optional(),
   notes: z.string().nullable().optional(),
   categoryId: z.string().nullable().optional(),
+  positionId: z.string().nullable().optional(),
 })
 
 export async function GET(
@@ -27,6 +28,10 @@ export async function GET(
       include: {
         salaryRules: true,
         category: { select: { id: true, name: true } },
+        position: { select: { id: true, name: true, icon: true, color: true } },
+        employeeProjects: {
+          include: { category: { select: { id: true, name: true } }, salaryRules: true },
+        },
         payments: {
           orderBy: { createdAt: 'desc' },
           take: 20,
@@ -71,10 +76,15 @@ export async function PATCH(
         ...(data.walletAddress !== undefined ? { walletAddress: data.walletAddress } : {}),
         ...(data.notes !== undefined ? { notes: data.notes } : {}),
         ...(data.categoryId !== undefined ? { categoryId: data.categoryId } : {}),
+        ...(data.positionId !== undefined ? { positionId: data.positionId } : {}),
       },
       include: {
         salaryRules: true,
         category: { select: { id: true, name: true } },
+        position: { select: { id: true, name: true, icon: true, color: true } },
+        employeeProjects: {
+          include: { category: { select: { id: true, name: true } }, salaryRules: true },
+        },
       },
     })
 

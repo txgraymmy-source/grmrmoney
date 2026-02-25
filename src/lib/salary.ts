@@ -15,11 +15,12 @@ export interface TransactionInput {
 
 export function calculateSalary(
   rules: SalaryRuleInput[],
-  transactions: TransactionInput[],
+  transactions: TransactionInput[] | undefined | null,
   period: string
 ): number {
+  const txList = transactions ?? []
   const [year, month] = period.split('-').map(Number)
-  const pTxs = transactions.filter(tx => {
+  const pTxs = txList.filter(tx => {
     const d = new Date(tx.timestamp)
     return d.getFullYear() === year && d.getMonth() + 1 === month
   })

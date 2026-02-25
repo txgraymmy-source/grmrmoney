@@ -2,7 +2,7 @@
 
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  LineChart, Line,
+  LineChart, Line, PieChart, Pie, Cell,
 } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
@@ -34,13 +34,24 @@ export interface FundStat {
   pendingCount: number
 }
 
+export interface ExpenseCategoryStat {
+  id: string
+  name: string
+  icon: string
+  color: string
+  amount: number
+  percent: number
+}
+
 interface Props {
   projectStats: ProjectStat[]
   businessDailyData: DailyBalanceItem[]
   fundStats: FundStat[]
+  expenseCategoryStats: ExpenseCategoryStat[]
   showBar?: boolean
   showLine?: boolean
   showTable?: boolean
+  showExpenseCategories?: boolean
 }
 
 const fmt = (v: number) =>
@@ -72,13 +83,26 @@ const LineTooltip = ({ active, payload, label }: any) => {
 
 const axisStyle = { fill: 'rgba(255,255,255,0.3)', fontSize: 11 }
 
+const DonutTooltip = ({ active, payload }: any) => {
+  if (!active || !payload?.length) return null
+  const d = payload[0]
+  return (
+    <div className="bg-[#1c1c1f] border border-[rgba(120,120,128,0.2)] rounded-[12px] p-3 shadow-xl text-[13px]">
+      <p className="text-white/60 mb-1">{d.payload.icon} {d.name}</p>
+      <p style={{ color: d.payload.color }}>{fmt(d.value)} USDT · {d.payload.percent.toFixed(1)}%</p>
+    </div>
+  )
+}
+
 export default function DashboardCharts({
   projectStats,
   businessDailyData,
   fundStats,
+  expenseCategoryStats,
   showBar = true,
   showLine = true,
   showTable = true,
+  showExpenseCategories = true,
 }: Props) {
   const hasProjectData = projectStats.some(p => p.blockchainIn > 0 || p.ofGross > 0)
   const hasBusinessData = businessDailyData.some(d => d.income > 0 || d.expenses > 0)
@@ -102,30 +126,82 @@ export default function DashboardCharts({
 
   return (
     <div className="space-y-6">
-      {/* Bar chart */}
-      {showBar && (
-        <Card className="card-rounded">
-          <CardHeader><CardTitle>Сравнение проектов</CardTitle></CardHeader>
-          <CardContent>
-            {hasProjectData ? (
-              <ResponsiveContainer width="100%" height={280}>
-                <BarChart data={barData} margin={{ top: 4, right: 16, left: 8, bottom: 4 }} barGap={4}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(120,120,128,0.12)" vertical={false} />
-                  <XAxis dataKey="shortName" tick={axisStyle} axisLine={false} tickLine={false} />
-                  <YAxis tick={axisStyle} axisLine={false} tickLine={false} tickFormatter={v => `$${fmt(v)}`} width={60} />
-                  <Tooltip content={<BarTooltip />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
-                  <Legend wrapperStyle={{ paddingTop: 12 }} formatter={v => <span className="text-white/60 text-[12px]">{v}</span>} />
-                  <Bar dataKey="blockchainIn" name="Крипто" fill="#d6d3ff" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="ofNet" name="OF (нетто)" fill="#a78bfa" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-[280px] flex items-center justify-center text-white/25 text-[14px]">
-                Нет данных за выбранный период
-              </div>
-            )}
-          </CardContent>
-        </Card>
+      {/* Bar chart + Donut — side by side, square */}
+      {(showBar || showExpenseCategories) && (
+        <div className={`grid gap-6 ${showBar && showExpenseCategories ? 'lg:grid-cols-2' : ''}`}>
+
+          {showBar && (
+            <div className="aspect-square">
+              <Card className="card-rounded h-full flex flex-col">
+                <CardHeader className="flex-shrink-0"><CardTitle>Сравнение проектов</CardTitle></CardHeader>
+                <CardContent className="flex-1 min-h-0 pb-4">
+                  {hasProjectData ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={barData} margin={{ top: 4, right: 16, left: 8, bottom: 4 }} barGap={4}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(120,120,128,0.12)" vertical={false} />
+                        <XAxis dataKey="shortName" tick={axisStyle} axisLine={false} tickLine={false} />
+                        <YAxis tick={axisStyle} axisLine={false} tickLine={false} tickFormatter={v => `$${fmt(v)}`} width={60} />
+                        <Tooltip content={<BarTooltip />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
+                        <Legend wrapperStyle={{ paddingTop: 12 }} formatter={v => <span className="text-white/60 text-[12px]">{v}</span>} />
+                        <Bar dataKey="blockchainIn" name="Крипто" fill="#d6d3ff" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="ofNet" name="OF (нетто)" fill="#a78bfa" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="h-full flex items-center justify-center text-white/25 text-[14px]">
+                      Нет данных за выбранный период
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {showExpenseCategories && (
+            <div className="aspect-square">
+              <Card className="card-rounded h-full flex flex-col">
+                <CardHeader className="flex-shrink-0"><CardTitle>Расходы по категориям</CardTitle></CardHeader>
+                <CardContent className="flex-1 min-h-0 flex flex-col items-center justify-center gap-4 pb-4">
+                  {expenseCategoryStats.length === 0 ? (
+                    <p className="text-white/25 text-[14px]">Нет расходов за выбранный период</p>
+                  ) : (
+                    <>
+                      <PieChart width={200} height={200}>
+                        <Pie
+                          data={expenseCategoryStats}
+                          dataKey="amount"
+                          nameKey="name"
+                          cx={100}
+                          cy={100}
+                          innerRadius={58}
+                          outerRadius={90}
+                          paddingAngle={2}
+                          strokeWidth={0}
+                        >
+                          {expenseCategoryStats.map((entry) => (
+                            <Cell key={entry.id} fill={entry.color} opacity={0.9} />
+                          ))}
+                        </Pie>
+                        <Tooltip content={<DonutTooltip />} />
+                      </PieChart>
+                      <div className="w-full space-y-2 overflow-y-auto">
+                        {expenseCategoryStats.map((cat) => (
+                          <div key={cat.id} className="flex items-center gap-2 min-w-0">
+                            <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: cat.color }} />
+                            <span className="text-[12px] text-white/60 flex-shrink-0">{cat.icon}</span>
+                            <span className="text-[13px] text-white truncate flex-1 min-w-0">{cat.name}</span>
+                            <span className="text-[12px] text-white/40 flex-shrink-0 tabular-nums">{cat.percent.toFixed(1)}%</span>
+                            <span className="text-[13px] text-white font-medium flex-shrink-0 tabular-nums">${fmt(cat.amount)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          )}
+        </div>
       )}
 
       {/* Business dynamics */}

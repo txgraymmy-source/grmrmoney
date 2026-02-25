@@ -4,13 +4,14 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 
 const DEFAULT_WIDGETS = [
-  { type: 'stat_cards',       enabled: true, order: 0 },
-  { type: 'project_bar',      enabled: true, order: 1 },
-  { type: 'of_line',          enabled: true, order: 2 },
-  { type: 'income_table',     enabled: true, order: 3 },
-  { type: 'fund_overview',    enabled: true, order: 4 },
-  { type: 'categories_list',  enabled: true, order: 5 },
-  { type: 'transactions_list', enabled: true, order: 6 },
+  { type: 'stat_cards',          enabled: true, order: 0 },
+  { type: 'project_bar',         enabled: true, order: 1 },
+  { type: 'of_line',             enabled: true, order: 2 },
+  { type: 'income_table',        enabled: true, order: 3 },
+  { type: 'expense_categories',  enabled: true, order: 4 },
+  { type: 'fund_overview',       enabled: true, order: 5 },
+  { type: 'categories_list',     enabled: true, order: 6 },
+  { type: 'transactions_list',   enabled: true, order: 7 },
 ]
 
 export async function GET() {

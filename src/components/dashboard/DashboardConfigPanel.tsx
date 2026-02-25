@@ -10,13 +10,14 @@ interface Widget {
 }
 
 const WIDGET_LABELS: Record<string, { label: string; icon: string }> = {
-  stat_cards:       { label: 'Верхние плашки', icon: '🔢' },
-  project_bar:      { label: 'Сравнение проектов', icon: '📊' },
-  of_line:          { label: 'Динамика бизнеса', icon: '📈' },
-  income_table:     { label: 'Таблицы поступлений', icon: '📋' },
-  fund_overview:    { label: 'Фонды (нижняя колонка)', icon: '💰' },
-  categories_list:  { label: 'Модели (нижняя колонка)', icon: '👤' },
-  transactions_list: { label: 'Последние транзакции', icon: '⚡' },
+  stat_cards:         { label: 'Верхние плашки', icon: '🔢' },
+  project_bar:        { label: 'Сравнение проектов', icon: '📊' },
+  of_line:            { label: 'Динамика бизнеса', icon: '📈' },
+  income_table:       { label: 'Таблицы поступлений', icon: '📋' },
+  expense_categories: { label: 'Расходы по категориям', icon: '🍩' },
+  fund_overview:      { label: 'Фонды (нижняя колонка)', icon: '💰' },
+  categories_list:    { label: 'Модели (нижняя колонка)', icon: '👤' },
+  transactions_list:  { label: 'Последние транзакции', icon: '⚡' },
 }
 
 interface DashboardConfigPanelProps {

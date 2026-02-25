@@ -7,16 +7,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import DashboardClient from '@/components/dashboard/DashboardClient'
 import DashboardConfigButton from '@/components/dashboard/DashboardConfigButton'
 import DashboardFilterBar from '@/components/dashboard/DashboardFilterBar'
-import type { ProjectStat, DailyBalanceItem, FundStat } from '@/components/dashboard/DashboardCharts'
+import type { ProjectStat, DailyBalanceItem, FundStat, ExpenseCategoryStat } from '@/components/dashboard/DashboardCharts'
 import { calculateSalary, currentPeriod } from '@/lib/salary'
 
 const DEFAULT_WIDGETS = [
-  { type: 'stat_cards',      enabled: true, order: 0 },
-  { type: 'project_bar',     enabled: true, order: 1 },
-  { type: 'of_line',         enabled: true, order: 2 },
-  { type: 'income_table',    enabled: true, order: 3 },
-  { type: 'fund_overview',   enabled: true, order: 4 },
-  { type: 'categories_list', enabled: true, order: 5 },
+  { type: 'stat_cards',          enabled: true, order: 0 },
+  { type: 'project_bar',         enabled: true, order: 1 },
+  { type: 'of_line',             enabled: true, order: 2 },
+  { type: 'income_table',        enabled: true, order: 3 },
+  { type: 'expense_categories',  enabled: true, order: 4 },
+  { type: 'fund_overview',       enabled: true, order: 5 },
+  { type: 'categories_list',     enabled: true, order: 6 },
 ]
 
 const COLORS = ['#d6d3ff','#a78bfa','#60a5fa','#34d399','#fbbf24','#f87171','#e879f9','#fb923c']
@@ -47,7 +48,7 @@ async function getDashboardData(
   rawCats: string | null,
   rawFunds: string | null,
 ) {
-  const [categories, allTimeTxs, funds, contacts, unreadCount, pendingDistributions] = await Promise.all([
+  const [categories, allTimeTxs, funds, contacts, unreadCount, pendingDistributions, txCategories] = await Promise.all([
     prisma.category.findMany({ where: { userId, archived: false }, orderBy: { createdAt: 'asc' } }),
     prisma.transaction.findMany({ where: { userId }, orderBy: { timestamp: 'desc' } }),
     prisma.fund.findMany({
@@ -61,6 +62,7 @@ async function getDashboardData(
     }),
     prisma.notification.count({ where: { userId, read: false } }),
     prisma.notification.count({ where: { userId, read: false, type: 'distribution_pending' } }),
+    prisma.transactionCategory.findMany({ where: { userId } }),
   ])
 
   // ── ALL-TIME STATS ──
@@ -183,6 +185,29 @@ async function getDashboardData(
     }
   })
 
+  // ── EXPENSE CATEGORIES ──
+  const expenseByTxCat: Record<string, number> = {}
+  for (const tx of periodTxs.filter(t => t.type === 'outgoing')) {
+    const key = tx.transactionCategoryId || '__none__'
+    expenseByTxCat[key] = (expenseByTxCat[key] || 0) + parseFloat(tx.amount)
+  }
+  const totalExpenses = Object.values(expenseByTxCat).reduce((s, v) => s + v, 0)
+  const expenseCategoryStats: ExpenseCategoryStat[] = Object.entries(expenseByTxCat)
+    .filter(([catId]) => catId !== '__none__')
+    .map(([catId, amount]) => {
+      const cat = txCategories.find(c => c.id === catId)
+      return {
+        id: catId,
+        name: cat?.name ?? 'Неизвестно',
+        icon: cat?.icon ?? '📦',
+        color: cat?.color ?? '#52525b',
+        amount,
+        percent: totalExpenses > 0 ? (amount / totalExpenses) * 100 : 0,
+      }
+    })
+    .sort((a, b) => b.amount - a.amount)
+    .slice(0, 8)
+
   // ── FUND FILTER ──
   const fundIds = rawFunds === null ? null
     : rawFunds === '' ? []
@@ -201,6 +226,7 @@ async function getDashboardData(
     periodStats: { income: periodIncome, expenses: periodExpenses, paidExpenses: periodPaidExpenses },
     projectStats,
     businessDailyData,
+    expenseCategoryStats,
     catListData,
     displayFunds,
     allFundStats,
@@ -222,7 +248,7 @@ export default async function DashboardPage({
   const rawFunds = sp.funds      !== undefined ? sp.funds       : null
 
   const [
-    { stats, periodStats, projectStats, businessDailyData, catListData, displayFunds, allFundStats, displayFundStats },
+    { stats, periodStats, projectStats, businessDailyData, expenseCategoryStats, catListData, displayFunds, allFundStats, displayFundStats },
     dashboardConfigDb,
     allCategories,
     allFunds,
@@ -244,7 +270,7 @@ export default async function DashboardPage({
   const sortedWidgets = [...widgets].sort((a, b) => a.order - b.order)
   const isEnabled = (type: string) => sortedWidgets.find(w => w.type === type)?.enabled !== false
   const anyEnabled = sortedWidgets.some(w => w.enabled)
-  const hasAnalytics = isEnabled('project_bar') || isEnabled('of_line') || isEnabled('income_table')
+  const hasAnalytics = isEnabled('project_bar') || isEnabled('of_line') || isEnabled('income_table') || isEnabled('expense_categories')
 
   return (
     <div className="space-y-6">
@@ -392,14 +418,16 @@ export default async function DashboardPage({
       )}
 
       {/* Charts */}
-      {(isEnabled('project_bar') || isEnabled('of_line') || isEnabled('income_table')) && (
+      {(isEnabled('project_bar') || isEnabled('of_line') || isEnabled('income_table') || isEnabled('expense_categories')) && (
         <DashboardClient
           projectStats={projectStats}
           businessDailyData={businessDailyData}
           fundStats={displayFundStats}
+          expenseCategoryStats={expenseCategoryStats}
           showBar={isEnabled('project_bar')}
           showLine={isEnabled('of_line')}
           showTable={isEnabled('income_table')}
+          showExpenseCategories={isEnabled('expense_categories')}
         />
       )}
 
