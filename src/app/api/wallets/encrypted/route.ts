@@ -3,7 +3,8 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 
-// GET - получить все зашифрованные кошельки пользователя
+// GET - получить зашифрованные кошельки пользователя
+// ?categoryId=xxx  → вернуть один конкретный кошелёк
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -12,15 +13,35 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Получаем все категории пользователя с зашифрованными кошельками
+    const { searchParams } = new URL(request.url)
+    const categoryId = searchParams.get('categoryId')
+
+    // Single wallet fetch
+    if (categoryId) {
+      const category = await prisma.category.findUnique({
+        where: { id: categoryId },
+        include: { encryptedWallet: true },
+      })
+
+      if (!category || category.userId !== session.user.id) {
+        return NextResponse.json({ error: 'Not found' }, { status: 404 })
+      }
+      if (!category.encryptedWallet) {
+        return NextResponse.json({ error: 'No wallet for this fund' }, { status: 404 })
+      }
+
+      return NextResponse.json({
+        success: true,
+        data: { categoryId: category.id, encryptedData: category.encryptedWallet.encryptedData },
+      })
+    }
+
+    // All wallets
     const categories = await prisma.category.findMany({
       where: { userId: session.user.id },
-      include: {
-        encryptedWallet: true,
-      },
+      include: { encryptedWallet: true },
     })
 
-    // Фильтруем только те, у которых есть зашифрованный кошелек
     const encryptedWallets = categories
       .filter(cat => cat.encryptedWallet)
       .map(cat => ({

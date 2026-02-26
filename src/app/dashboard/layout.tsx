@@ -23,14 +23,14 @@ export default async function DashboardLayout({
     <DashboardProviders>
       <div className="min-h-screen bg-[#101012]">
         {/* Header: логотип снаружи подложки слева, Rectangle 1904 — от лого до правого края */}
-        <div className="sticky top-0 z-40 flex items-center gap-4 px-6 pt-7">
+        <div className="sticky top-0 z-40 flex items-center gap-3 md:gap-4 px-4 md:px-6 pt-4 md:pt-7">
           {/* Логотип — левее подложки, без фона */}
-          <Link href="/dashboard" className="flex-shrink-0">
+          <Link href="/dashboard" className="flex-shrink-0 hidden md:block">
             <img src="/logo.svg" alt="VAULT by grmr" className="h-[52px] w-auto block" />
           </Link>
 
           {/* Rectangle 1904 — стеклянная подложка h=90, от лого до правого края */}
-          <div className="relative flex-1 flex items-center justify-between h-[90px] rounded-[25px] border border-[rgba(120,120,128,0.2)] px-6">
+          <div className="relative flex-1 flex items-center justify-between h-[62px] md:h-[90px] rounded-[20px] md:rounded-[25px] border border-[rgba(120,120,128,0.2)] px-4 md:px-6">
             {/* Glass background */}
             <div
               className="absolute inset-0 rounded-[25px] backdrop-blur-xl pointer-events-none"
@@ -55,7 +55,7 @@ export default async function DashboardLayout({
         </div>
 
         {/* Main Content */}
-        <main className="px-5 py-6">
+        <main className="px-4 md:px-5 py-5 md:py-6">
           {children}
         </main>
       </div>

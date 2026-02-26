@@ -4,11 +4,32 @@ import { prisma } from '@/lib/db'
 import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
 import SalaryPeriodPicker from '@/components/salary/SalaryPeriodPicker'
-import SalaryTableClient from '@/components/salary/SalaryTableClient'
+import SalaryPageClient from '@/components/salary/SalaryPageClient'
 import { calculateSalary, currentPeriod, formatPeriod } from '@/lib/salary'
 
 interface PageProps {
   searchParams: Promise<{ period?: string }>
+}
+
+export interface EmployeeRow {
+  contactCategoryId: string
+  contactId: string
+  contactName: string
+  contactWallet: string
+  positionName: string | null
+  positionIcon: string | null
+  positionColor: string | null
+  categoryId: string
+  categoryName: string
+  rules: Array<{ type: string; amount: number | null; percent: number | null; source: string | null; label: string | null }>
+  amount: number
+}
+
+export interface ProjectGroup {
+  categoryId: string
+  categoryName: string
+  totalAmount: number
+  employees: EmployeeRow[]
 }
 
 export default async function SalaryPage({ searchParams }: PageProps) {
@@ -18,7 +39,6 @@ export default async function SalaryPage({ searchParams }: PageProps) {
   const { period: periodParam } = await searchParams
   const period = periodParam || currentPeriod()
 
-  // Fetch all employee-project pairs with salary rules and category transactions
   const pairs = await prisma.contactCategory.findMany({
     where: {
       contact: { userId: session.user.id },
@@ -41,15 +61,19 @@ export default async function SalaryPage({ searchParams }: PageProps) {
       salaryRules: true,
     },
     orderBy: [
-      { contact: { name: 'asc' } },
       { category: { name: 'asc' } },
+      { contact: { name: 'asc' } },
     ],
   })
 
-  const rows = pairs.map(pair => {
-    const txs = pair.category.transactions
-    const amount = calculateSalary(pair.salaryRules, txs, period)
-    return {
+  // Build ProjectGroup[]
+  const groupMap = new Map<string, ProjectGroup>()
+
+  for (const pair of pairs) {
+    const amount = calculateSalary(pair.salaryRules, pair.category.transactions, period)
+
+    const empRow: EmployeeRow = {
+      contactCategoryId: pair.id,
       contactId: pair.contact.id,
       contactName: pair.contact.name,
       contactWallet: pair.contact.walletAddress,
@@ -58,19 +82,32 @@ export default async function SalaryPage({ searchParams }: PageProps) {
       positionColor: pair.contact.position?.color ?? null,
       categoryId: pair.category.id,
       categoryName: pair.category.name,
-      amount,
       rules: pair.salaryRules,
+      amount,
     }
-  })
 
-  const totalAmount = rows.reduce((s, r) => s + r.amount, 0)
+    if (!groupMap.has(pair.category.id)) {
+      groupMap.set(pair.category.id, {
+        categoryId: pair.category.id,
+        categoryName: pair.category.name,
+        totalAmount: 0,
+        employees: [],
+      })
+    }
+
+    const group = groupMap.get(pair.category.id)!
+    group.employees.push(empRow)
+    group.totalAmount += amount
+  }
+
+  const groups = Array.from(groupMap.values())
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-3xl font-semibold text-white">Зарплата</h1>
-          <p className="text-white/50 text-[15px] mt-1">
+          <h1 className="text-[28px] font-semibold text-white">Зарплата</h1>
+          <p className="text-white/40 text-[14px] mt-0.5">
             Выплаты за {formatPeriod(period)}
           </p>
         </div>
@@ -79,7 +116,7 @@ export default async function SalaryPage({ searchParams }: PageProps) {
         </Suspense>
       </div>
 
-      <SalaryTableClient rows={rows} period={period} totalAmount={totalAmount} />
+      <SalaryPageClient groups={groups} period={period} />
     </div>
   )
 }

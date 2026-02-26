@@ -10,6 +10,8 @@ const updateContactSchema = z.object({
   notes: z.string().nullable().optional(),
   categoryId: z.string().nullable().optional(),
   positionId: z.string().nullable().optional(),
+  paymentFrequency: z.enum(['monthly', 'twice_monthly', 'biweekly', 'weekly']).nullable().optional(),
+  paymentDates: z.string().nullable().optional(),
 })
 
 export async function GET(
@@ -77,6 +79,8 @@ export async function PATCH(
         ...(data.notes !== undefined ? { notes: data.notes } : {}),
         ...(data.categoryId !== undefined ? { categoryId: data.categoryId } : {}),
         ...(data.positionId !== undefined ? { positionId: data.positionId } : {}),
+        ...(data.paymentFrequency !== undefined ? { paymentFrequency: data.paymentFrequency } : {}),
+        ...(data.paymentDates !== undefined ? { paymentDates: data.paymentDates } : {}),
       },
       include: {
         salaryRules: true,

@@ -205,15 +205,17 @@ model GasWallet {
 }
 
 model Contact {
-  id               String            @id @default(cuid())
-  name             String
-  walletAddress    String
-  notes            String?
-  userId           String
-  categoryId       String?
-  positionId       String?
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
+  id                String            @id @default(cuid())
+  name              String
+  walletAddress     String
+  notes             String?
+  userId            String
+  categoryId        String?
+  positionId        String?
+  paymentFrequency  String?           // monthly | twice_monthly | biweekly | weekly
+  paymentDates      String?           // comma-separated: days of month "5,20" or days of week "1,5"
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
   category         Category?         @relation(fields: [categoryId], references: [id])
   position         Position?         @relation(fields: [positionId], references: [id])
   user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)

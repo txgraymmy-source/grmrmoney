@@ -10,6 +10,8 @@ const createContactSchema = z.object({
   notes: z.string().optional(),
   categoryId: z.string().optional(),
   positionId: z.string().optional(),
+  paymentFrequency: z.enum(['monthly', 'twice_monthly', 'biweekly', 'weekly']).optional(),
+  paymentDates: z.string().optional(),
 })
 
 export async function GET(request: NextRequest) {
@@ -51,7 +53,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name, walletAddress, notes, categoryId, positionId } = createContactSchema.parse(body)
+    const { name, walletAddress, notes, categoryId, positionId, paymentFrequency, paymentDates } = createContactSchema.parse(body)
 
     const contact = await prisma.contact.create({
       data: {
@@ -60,6 +62,8 @@ export async function POST(request: NextRequest) {
         notes,
         categoryId: categoryId || null,
         positionId: positionId || null,
+        paymentFrequency: paymentFrequency || null,
+        paymentDates: paymentDates || null,
         userId: session.user.id,
       },
       include: {

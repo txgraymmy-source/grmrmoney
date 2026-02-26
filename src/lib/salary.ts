@@ -59,10 +59,16 @@ export function formatPeriod(period: string): string {
 
 export function ruleDescription(rule: SalaryRuleInput): string {
   if (rule.type === 'fixed') return `${rule.amount} USDT`
+  if (rule.type === 'per_unit') return `${rule.amount} USDT / ${rule.label || 'шт'}`
+  if (rule.type === 'manual') return rule.label ? `Вручную (${rule.label})` : 'Вручную'
   const sourceLabel =
     rule.source === 'of_gross' ? 'OF брутто'
     : rule.source === 'of_net' ? 'OF нетто'
     : rule.source === 'crypto' ? 'крипто'
     : 'всё'
   return `${rule.percent}% от ${sourceLabel}`
+}
+
+export function isManualRule(rules: SalaryRuleInput[]): boolean {
+  return rules.some(r => r.type === 'manual' || r.type === 'per_unit')
 }

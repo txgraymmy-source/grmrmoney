@@ -1054,8 +1054,12 @@ export default function HeaderActions() {
       <button onClick={() => setModal('gas')} title="Газ (TRX)"
         className="w-[46px] h-[46px] rounded-[14px] bg-[rgba(118,118,128,0.12)] text-white/50 hover:text-white hover:bg-[rgba(118,118,128,0.2)] transition-all flex items-center justify-center flex-shrink-0">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-          <path d="M13 2c0 0-5 4.5-5 9a5 5 0 0 0 10 0c0-4.5-5-9-5-9z"/>
-          <path d="M10 14s-1.5.8-1.5 2.5a2.5 2.5 0 0 0 5 0c0-1.7-1.5-2.5-1.5-2.5"/>
+          <path d="M3 22V5a2 2 0 012-2h8a2 2 0 012 2v17"/>
+          <path d="M3 22H15"/>
+          <path d="M3 9H13"/>
+          <path d="M13 6h2l3 3v7.5"/>
+          <path d="M17 12h2a1 1 0 011 1v3a1 1 0 01-1 1h-2"/>
+          <path d="M18 17v2"/>
         </svg>
       </button>
 
