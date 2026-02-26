@@ -109,6 +109,23 @@ export default function EmployeeDetailClient({ contact, positions, availableCate
   const [activePeriodIdx, setActivePeriodIdx] = useState(0)
   const [unitByPeriod, setUnitByPeriod] = useState<Record<string, string>[]>([{}, {}])
   const [manualByPeriod, setManualByPeriod] = useState<Record<string, string>[]>([{}, {}])
+  // Correction mini-calculator: op = '+' | '-' | '÷', val = number string
+  const [corrOps, setCorrOps] = useState<Record<string, '+' | '-' | '÷'>>({})
+  const [corrVals, setCorrVals] = useState<Record<string, string>>({})
+  // Confirmed per_unit/manual inputs — only show ✓ when input has value
+  const [confirmed, setConfirmed] = useState<Set<string>>(new Set())
+  const toggleConfirm = (ruleId: string) =>
+    setConfirmed(prev => { const s = new Set(prev); s.has(ruleId) ? s.delete(ruleId) : s.add(ruleId); return s })
+
+  const getCorrDelta = (sysAmt: number, ruleId: string) => {
+    const op = corrOps[ruleId]
+    if (!op) return 0
+    const v = parseFloat(corrVals[ruleId] ?? '0') || 0
+    if (op === '+') return v
+    if (op === '-') return -v
+    if (op === '÷') return v > 1 ? sysAmt / v - sysAmt : 0
+    return 0
+  }
 
   // Payment detail modal
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null)
@@ -194,11 +211,12 @@ export default function EmployeeDetailClient({ contact, positions, availableCate
   const pairTotals = useMemo(() =>
     pairs.map(pair => ({
       pair,
-      total: pair.salaryRules.reduce(
-        (s, r) => s + calcRuleAmount(r, pair.category.transactions ?? [], period, activeUnit, activeManual), 0
-      ),
+      total: pair.salaryRules.reduce((s, r) => {
+        const sys = calcRuleAmount(r, pair.category.transactions ?? [], period, activeUnit, activeManual)
+        return s + sys + getCorrDelta(sys, r.id)
+      }, 0),
     })),
-    [pairs, period, activeUnit, activeManual]
+    [pairs, period, activeUnit, activeManual, corrOps, corrVals]
   )
   const grandTotal = pairTotals.reduce((s, p) => s + p.total, 0)
   const payAmount = periodSlots ? grandTotal / 2 : grandTotal
@@ -449,75 +467,135 @@ export default function EmployeeDetailClient({ contact, positions, availableCate
             <table className="w-full text-[13px]">
               <thead>
                 <tr className="border-b border-[rgba(120,120,128,0.08)]">
-                  <th className="px-4 py-2.5 text-left font-medium text-white/30 w-[200px]">Проект</th>
-                  <th className="px-4 py-2.5 text-left font-medium text-white/30">Условие</th>
-                  <th className="px-4 py-2.5 text-left font-medium text-white/30 w-[160px]">Ввод</th>
-                  <th className="px-4 py-2.5 text-right font-medium text-white/30 w-[100px]">Сумма</th>
-                  <th className="px-4 py-2.5 w-[120px]"></th>
+                  <th className="px-4 py-2.5 text-left font-medium text-white/25 w-[160px]">Проект</th>
+                  <th className="px-4 py-2.5 text-left font-medium text-white/25">Условие</th>
+                  <th className="px-4 py-2.5 text-left font-medium text-white/25 w-[150px]">Ввод</th>
+                  <th className="px-4 py-2.5 text-right font-medium text-white/25 w-[100px]">Начислено</th>
+                  <th className="px-4 py-2.5 text-center font-medium text-white/25 w-[120px]">Коррекция</th>
+                  <th className="px-4 py-2.5 text-right font-medium text-white/25 w-[90px]">Итого</th>
+                  <th className="px-4 py-2.5 w-[110px]"></th>
                 </tr>
               </thead>
               <tbody>
                 {pairTotals.map(({ pair, total }) => {
                   const pairPayAmt = periodSlots ? total / 2 : total
-                  const hasRules = pair.salaryRules.length > 0
 
                   return pair.salaryRules.length === 0 ? (
                     <tr key={pair.id} className="border-b border-[rgba(120,120,128,0.05)]">
                       <td className="px-4 py-3 text-white/50">{pair.category.name}</td>
-                      <td colSpan={3} className="px-4 py-3 text-white/20">Нет условий оплаты</td>
+                      <td colSpan={5} className="px-4 py-3 text-white/20">Нет условий оплаты</td>
                       <td />
                     </tr>
                   ) : (
                     pair.salaryRules.map((rule, rIdx) => {
-                      const ruleAmt = calcRuleAmount(rule, pair.category.transactions ?? [], period, activeUnit, activeManual)
-                      const displayAmt = periodSlots ? ruleAmt / 2 : ruleAmt
+                      const sysAmt = calcRuleAmount(rule, pair.category.transactions ?? [], period, activeUnit, activeManual)
+                      const sysPay = periodSlots ? sysAmt / 2 : sysAmt
+                      const corrDelta = getCorrDelta(sysAmt, rule.id)
+                      const corrPay = periodSlots ? corrDelta / 2 : corrDelta
+                      const totalPay = sysPay + corrPay
                       const isLastRule = rIdx === pair.salaryRules.length - 1
+                      const isConfirmed = confirmed.has(rule.id)
 
                       return (
-                        <tr key={rule.id} className={`border-b border-[rgba(120,120,128,0.05)] ${isLastRule ? 'border-b-[rgba(120,120,128,0.12)]' : ''}`}>
-                          {/* Project name — only on first rule row */}
-                          <td className="px-4 py-2.5 text-white/60 align-top">
+                        <tr key={rule.id} className={`border-b ${isLastRule ? 'border-[rgba(120,120,128,0.1)]' : 'border-[rgba(120,120,128,0.04)]'}`}>
+                          {/* Project — first row only */}
+                          <td className="px-4 py-2.5 text-white/55 align-middle text-[12px]">
                             {rIdx === 0 ? pair.category.name : ''}
                           </td>
 
-                          <td className="px-4 py-2.5 text-white/40">{ruleDescription(rule)}</td>
+                          {/* Rule description */}
+                          <td className="px-4 py-2.5 text-white/35 text-[12px]">{ruleDescription(rule)}</td>
 
-                          {/* Input cell */}
+                          {/* Input + confirm checkmark (only when has value) */}
                           <td className="px-4 py-2.5">
                             {rule.type === 'per_unit' && (
                               <div className="flex items-center gap-1.5">
                                 <Input type="number" min="0"
                                   value={activeUnit[rule.id] ?? ''}
-                                  onChange={e => setUnit(rule.id, e.target.value)}
-                                  className="w-[60px] h-[26px] text-[12px] text-center px-1"
-                                  placeholder="0" />
-                                <span className="text-white/25 text-[11px]">{rule.label || 'шт'}</span>
+                                  onChange={e => { setUnit(rule.id, e.target.value); setConfirmed(prev => { const s = new Set(prev); s.delete(rule.id); return s }) }}
+                                  className={`w-[56px] h-[26px] text-[11px] text-center px-1 ${isConfirmed ? 'opacity-50' : ''}`}
+                                  placeholder="0" readOnly={isConfirmed} />
+                                <span className="text-white/20 text-[11px]">{rule.label || 'шт'}</span>
+                                {/* checkmark only if value entered */}
+                                {(activeUnit[rule.id] ?? '') !== '' && (
+                                  <button onClick={() => toggleConfirm(rule.id)}
+                                    className={`w-6 h-6 rounded-[6px] flex items-center justify-center transition-all shrink-0 ${
+                                      isConfirmed ? 'bg-green-500/20 text-green-400' : 'bg-white/[0.05] text-white/30 hover:text-white/70'
+                                    }`}>
+                                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                                      <path d="M1.5 5L4 7.5L8.5 2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                    </svg>
+                                  </button>
+                                )}
                               </div>
                             )}
                             {rule.type === 'manual' && (
                               <div className="flex items-center gap-1">
-                                <span className="text-white/25 text-[11px]">$</span>
+                                <span className="text-white/20 text-[11px]">$</span>
                                 <Input type="number" min="0" step="0.01"
                                   value={activeManual[rule.id] ?? ''}
-                                  onChange={e => setManual(rule.id, e.target.value)}
-                                  className="w-[80px] h-[26px] text-[12px] text-right px-2"
-                                  placeholder="0.00" />
+                                  onChange={e => { setManual(rule.id, e.target.value); setConfirmed(prev => { const s = new Set(prev); s.delete(rule.id); return s }) }}
+                                  className={`w-[72px] h-[26px] text-[11px] text-right px-2 ${isConfirmed ? 'opacity-50' : ''}`}
+                                  placeholder="0.00" readOnly={isConfirmed} />
+                                {(activeManual[rule.id] ?? '') !== '' && (
+                                  <button onClick={() => toggleConfirm(rule.id)}
+                                    className={`w-6 h-6 rounded-[6px] flex items-center justify-center transition-all shrink-0 ${
+                                      isConfirmed ? 'bg-green-500/20 text-green-400' : 'bg-white/[0.05] text-white/30 hover:text-white/70'
+                                    }`}>
+                                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                                      <path d="M1.5 5L4 7.5L8.5 2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                    </svg>
+                                  </button>
+                                )}
                               </div>
                             )}
                           </td>
 
-                          {/* Amount */}
-                          <td className={`px-4 py-2.5 text-right font-medium ${displayAmt > 0 ? 'text-white/70' : 'text-white/20'}`}>
-                            {displayAmt > 0 ? `$${fmt(displayAmt)}` : '—'}
+                          {/* Начислено */}
+                          <td className={`px-4 py-2.5 text-right text-[12px] ${sysPay > 0 ? 'text-white/55' : 'text-white/18'}`}>
+                            {sysPay > 0 ? `$${fmt(sysPay)}` : '—'}
                           </td>
 
-                          {/* Pay button — only on last rule row */}
+                          {/* Коррекция — mini calculator */}
+                          <td className="px-4 py-2.5">
+                            <div className="flex items-center gap-1 justify-center">
+                              {/* Op buttons */}
+                              {(['+', '-', '÷'] as const).map(op => (
+                                <button key={op}
+                                  onClick={() => setCorrOps(prev => ({ ...prev, [rule.id]: prev[rule.id] === op ? undefined as any : op }))}
+                                  className={`w-6 h-6 rounded-[5px] text-[11px] font-medium transition-all ${
+                                    corrOps[rule.id] === op
+                                      ? op === '+' ? 'bg-green-500/20 text-green-400'
+                                        : op === '-' ? 'bg-red-500/20 text-red-400'
+                                        : 'bg-[rgba(214,211,255,0.15)] text-[#d6d3ff]'
+                                      : 'bg-white/[0.04] text-white/30 hover:text-white/60 hover:bg-white/[0.07]'
+                                  }`}>{op}</button>
+                              ))}
+                              {/* Value input — only when op selected */}
+                              {corrOps[rule.id] && (
+                                <Input type="number" min="0" step="0.01"
+                                  value={corrVals[rule.id] ?? ''}
+                                  onChange={e => setCorrVals(prev => ({ ...prev, [rule.id]: e.target.value }))}
+                                  className={`w-[60px] h-[26px] text-[11px] text-center px-1 ${
+                                    corrOps[rule.id] === '-' ? 'text-red-400' : corrOps[rule.id] === '+' ? 'text-green-400' : 'text-[#d6d3ff]'
+                                  }`}
+                                  placeholder="0" />
+                              )}
+                            </div>
+                          </td>
+
+                          {/* Итого */}
+                          <td className={`px-4 py-2.5 text-right text-[12px] font-medium ${totalPay !== 0 ? 'text-white/75' : 'text-white/18'}`}>
+                            {totalPay !== 0 ? `$${fmt(totalPay)}` : '—'}
+                          </td>
+
+                          {/* Выплатить — last row only */}
                           <td className="px-4 py-2.5 text-right">
                             {isLastRule && (
-                              <div className="flex items-center justify-end gap-2">
-                                {hasRules && (
-                                  <span className={`text-[13px] font-semibold ${pairPayAmt > 0 ? 'text-[#d6d3ff]' : 'text-white/20'}`}>
-                                    {pairPayAmt > 0 ? `$${fmt(pairPayAmt)}` : '—'}
+                              <div className="flex items-center justify-end gap-1.5">
+                                {pairPayAmt !== 0 && (
+                                  <span className={`text-[12px] font-semibold ${pairPayAmt > 0 ? 'text-[#d6d3ff]' : 'text-red-400'}`}>
+                                    ${fmt(pairPayAmt)}
                                   </span>
                                 )}
                                 <button
@@ -540,11 +618,10 @@ export default function EmployeeDetailClient({ contact, positions, availableCate
                 })}
               </tbody>
 
-              {/* Grand total */}
-              {(pairs.length > 1 || periodSlots) && payAmount > 0 && (
+              {(pairs.length > 1 || periodSlots) && payAmount !== 0 && (
                 <tfoot>
-                  <tr className="bg-[rgba(214,211,255,0.02)]">
-                    <td colSpan={3} className="px-4 py-3 text-white/30 text-[12px]">
+                  <tr className="bg-[rgba(214,211,255,0.02)] border-t border-[rgba(120,120,128,0.1)]">
+                    <td colSpan={5} className="px-4 py-3 text-white/30 text-[12px]">
                       {periodSlots ? `Итого за период ${activePeriodIdx + 1}` : 'Итого'}
                     </td>
                     <td className="px-4 py-3 text-right text-[#d6d3ff] font-bold text-[14px]">
