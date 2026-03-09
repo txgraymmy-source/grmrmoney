@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { hash } from 'bcryptjs'
 import { prisma } from '@/lib/db'
 import { z } from 'zod'
+import { signIn } from 'next-auth/react'
 
 const registerSchema = z.object({
   email: z.string().email('Неверный формат email'),
@@ -49,6 +50,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: user,
+      autoLogin: true,
     })
   } catch (error) {
     if (error instanceof z.ZodError) {

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { signIn } from 'next-auth/react'
 
 type Step = 'info' | 'type'
 type AccountType = 'crypto' | 'accounting'
@@ -33,9 +34,30 @@ export default function RegisterPage() {
         body: JSON.stringify({ email: formData.email, password: formData.password, name: formData.name, accountType: type }),
       })
       const data = await response.json()
-      if (!response.ok) { setError(data.error || 'Ошибка при регистрации'); setStep('info'); return }
-      router.push('/login?registered=true')
-    } catch {
+      if (!response.ok) { 
+        setError(data.error || 'Ошибка при регистрации')
+        setStep('info')
+        return 
+      }
+      
+      // Автоматическая авторизация после успешной регистрации
+      const signInResult = await signIn('credentials', {
+        email: formData.email,
+        password: formData.password,
+        redirect: false,
+      })
+
+      if (signInResult?.error) {
+        setError('Ошибка авторизации после регистрации')
+        setStep('info')
+        return
+      }
+
+      // Перенаправление на dashboard/employees
+      router.push('/dashboard/employees')
+      router.refresh()
+    } catch (error) {
+      console.error('Registration error:', error)
       setError('Ошибка при регистрации')
       setStep('info')
     } finally {
